@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Ultiviewer.App/Ultiviewer.App.csproj" />
+    <Project Path="src/Ultiviewer.Core/Ultiviewer.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Ultiviewer.Core.Tests/Ultiviewer.Core.Tests.csproj" />
+  </Folder>
+</Solution>

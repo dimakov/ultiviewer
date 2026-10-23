@@ -1,0 +1,11 @@
+bin/
+obj/
+artifacts/
+*.user
+*.suo
+.vs/
+.idea/
+TestResults/
+
+# Microsoft's binary, kept locally as a reference only
+ONENOTE.EXE
