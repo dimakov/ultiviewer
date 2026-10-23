@@ -318,6 +318,30 @@ Each milestone ends with a runnable app and small, focused commits.
 - Writes a new notebook folder and never modifies the source.
 - Ink, free-positioned containers and embedded files will need lossy fallbacks.
 
+### M8: Live preview editing (Obsidian style)
+
+- A fourth view mode, **Live**, next to Edit / Split / Preview: the Markdown source is edited in place but shown formatted. Markers (`**`, `#`, `[`…`](url)`, fences) are hidden except where the caret or selection is, so the text never jumps between a source and a rendered copy.
+- Built inside AvalonEdit: a Core analyzer turns Markdig's syntax tree (with precise source positions) into styled spans with "reveal ranges"; App-side an element generator hides or replaces markers (bullets, checkboxes, images, tables, rules), a line transformer applies fonts, sizes and colors, and a background renderer draws code blocks, quote bars and rules.
+- Proportional font and a readable line width in Live mode; code, tables and front matter keep the monospace font. Clicking a link opens it, clicking a checkbox toggles it, clicking a table or image reveals its source.
+- **Done when:** headings, emphasis, links, wiki links, tags, lists, tasks, quotes, code blocks, images, tables and rules render while typing, and each mode can be switched to per tab.
+
+### M9–M20: Additions (priority order from user feedback)
+
+| # | Milestone | Scope for the first version | Notes |
+|---|---|---|---|
+| M9 | Version history | Snapshot every save (and every external change) into a per-user history store; History window with a timeline, line diff against the current text or disk, restore all or the selected text; conflicts keep both versions. | Content-addressed store with pruning (keep all for 24 h, hourly for 30 days, daily after). |
+| M10 | Spreadsheet-like tables | Tab / Shift+Tab between cells with auto-alignment, Enter for a new row, insert/delete/move rows and columns, column alignment, paste TSV/Excel into a table. | Shares `MarkdownTable` with the Live table widget. |
+| M11 | Quick capture and daily notes | Global hotkey (`RegisterHotKey`) opens a small capture window; append to Inbox or today's daily note; clipboard prefill; "Open today's note" with a template. | Needs the app running; adds a tray icon so it can stay in the background. |
+| M12 | Two documents side by side | Two editor groups (vertical or horizontal), each with its own tabs, scrolling and view mode; the same document can be open in both. | The biggest refactor: the single `EditorHost` becomes one per group. |
+| M13 | Outline, folding, structure | Outline pane of headings; folding of headings, lists and code blocks; move a heading section or list subtree up/down; folded sections remembered per page. | AvalonEdit `FoldingManager`. |
+| M14 | Task dates and reminders | `📅 2026-10-25`, `⏳`, `🔁 every week`, `⏫/🔼/🔽` (Obsidian Tasks syntax); Today / Overdue / Upcoming in the To-do pane; completing a recurring task creates the next one; Windows notifications for due times. | Same syntax as Obsidian Tasks, so notes stay portable. |
+| M15 | HTML / PDF export and print | Export a page or section to standalone HTML (inlined CSS and images) or PDF (WebView2 `PrintToPdfAsync`); print with preview; `<!-- pagebreak -->`. | Reuses the preview renderer, so math, Mermaid and code highlighting come for free. |
+| M16 | Search inside PDFs and images | Extract PDF text (PdfPig) and OCR images (`Windows.Media.Ocr`) in the background; index them as attachment blocks with page numbers; results show the attachment and page. | Requires a Windows 10 19041+ target framework for OCR. |
+| M17 | Backlinks and heading links | Links pane: pages linking here, outgoing links, broken links, unlinked mentions; `[[Page#Heading]]` completion and navigation. | Uses the existing index and link resolver. |
+| M18 | Command palette and shortcut editor | Ctrl+Shift+P palette over every command with its shortcut; a shortcut editor with conflict detection in Settings. | Builds on `KeyboardShortcuts`. |
+| M19 | Saved searches and properties | Front-matter properties indexed (`status:`, `project:`…), queried as `status:done`; saved searches in the tree; results as a sortable table. | Extends the search grammar and index schema. |
+| M20 | Formatted paste and web capture | Paste HTML (browser, Word) as Markdown with lists, links and tables; "Clip web page…" downloads an article with its images, source URL and date. | A browser extension is out of scope; the URL clipper covers the same workflow. |
+
 ### Later
 
 OCR of pasted images with `Windows.Media.Ocr`, with the text indexed as a block; stemming expanded at query time; HTML/PDF export of whole sections; git integration (commit on idle); per-section encryption; a plugin API.
