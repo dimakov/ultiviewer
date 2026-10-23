@@ -72,6 +72,12 @@ public sealed partial class MainViewModel
             return;
         }
 
+        if (href.StartsWith(TagParser.Scheme, StringComparison.OrdinalIgnoreCase))
+        {
+            SearchFor("#" + MarkdownLinks.Decode(href[TagParser.Scheme.Length..]));
+            return;
+        }
+
         if (href.StartsWith(WikiLinkParser.Scheme, StringComparison.OrdinalIgnoreCase))
         {
             OpenWikiLink(from, MarkdownLinks.Decode(href[WikiLinkParser.Scheme.Length..]));

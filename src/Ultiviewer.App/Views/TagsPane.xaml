@@ -1,0 +1,23 @@
+<UserControl x:Class="Ultiviewer.App.Views.TagsPane"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <ListBox x:Name="TagList" Margin="0,6,0,0" BorderThickness="0" Background="Transparent"
+                 ItemsSource="{Binding AllTags}" AutomationProperties.Name="Tags in all notebooks"
+                 MouseUp="OnTagClicked" KeyDown="OnTagKeyDown">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Right" Margin="8,0,0,0" Opacity="0.6" Text="{Binding Pages}" />
+                        <TextBlock>
+                            <Run Text="#" /><Run Text="{Binding Tag, Mode=OneWay}" />
+                        </TextBlock>
+                    </DockPanel>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+        <TextBlock Margin="12" TextWrapping="Wrap" Opacity="0.6"
+                   Text="No tags yet. Write #tags in your pages (or tags: in front matter) and they appear here; click one to find its pages."
+                   Visibility="{Binding AllTags.Count, Converter={StaticResource ZeroToVisibility}}" />
+    </Grid>
+</UserControl>

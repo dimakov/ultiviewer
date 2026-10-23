@@ -369,6 +369,7 @@ public sealed partial class MainViewModel
             }
 
             var oldPath = node.Path;
+            var before = node.Node;
             string? newPath = null;
             if (TryRun(() => newPath = _ops.Rename(node.Node, newName)))
             {
@@ -376,6 +377,7 @@ public sealed partial class MainViewModel
                 RefreshNotebook(node.Root);
                 SelectPath(newPath!);
                 finalPath = newPath!;
+                UpdateLinksAfterMove(before, newPath!);
             }
         }
 
@@ -496,12 +498,14 @@ public sealed partial class MainViewModel
 
         var oldPath = node.Path;
         var oldRoot = node.Root;
+        var before = node.Node;
         string? newPath = null;
         if (TryRun(() => newPath = _ops.Move(node.Node, container, index)))
         {
             if (!string.Equals(oldPath, newPath, StringComparison.OrdinalIgnoreCase))
             {
                 OnItemMoved(oldPath, newPath!);
+                UpdateLinksAfterMove(before, newPath!);
             }
 
             if (position == DropPosition.Inside)

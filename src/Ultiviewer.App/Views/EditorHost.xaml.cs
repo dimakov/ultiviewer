@@ -41,6 +41,7 @@ public partial class EditorHost : UserControl
         Editor.ContextMenu = BuildContextMenu();
         InitializePreview();
         InitializeCommands();
+        InitializeConveniences();
         SplitterMoved += SavePreviewRatio;
     }
 

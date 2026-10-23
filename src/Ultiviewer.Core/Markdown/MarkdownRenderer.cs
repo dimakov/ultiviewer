@@ -15,6 +15,7 @@ public static class MarkdownRenderer
         .UseAdvancedExtensions()
         .UseYamlFrontMatter()
         .Use<WikiLinkExtension>()
+        .Use<TagExtension>()
         .Build();
 
     public static string ToHtml(string markdown)

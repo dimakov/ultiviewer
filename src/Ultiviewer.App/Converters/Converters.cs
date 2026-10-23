@@ -43,8 +43,11 @@ public sealed class HexToBrushConverter : IValueConverter
 
 public sealed class NonZeroToVisibilityConverter : IValueConverter
 {
+    /// <summary>When set, visible for zero instead (empty-state messages).</summary>
+    public bool Invert { get; set; }
+
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>
-        value is int n && n != 0 ? Visibility.Visible : Visibility.Collapsed;
+        (value is int n && n != 0) ^ Invert ? Visibility.Visible : Visibility.Collapsed;
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
         throw new NotSupportedException();

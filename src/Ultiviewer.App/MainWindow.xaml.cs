@@ -202,6 +202,89 @@ public partial class MainWindow : Window
         ShowMenu(menu, (Button)sender);
     }
 
+    // ---- Go and template menus (built when opened) ----
+
+    private void OnGoMenuOpened(object sender, RoutedEventArgs e)
+    {
+        if (!ReferenceEquals(e.OriginalSource, GoMenu))
+        {
+            return;
+        }
+
+        GoMenu.Items.Clear();
+        GoMenu.Items.Add(new MenuItem { Header = "Go to _page…", Command = _vm.QuickOpenCommand, InputGestureText = "Ctrl+E" });
+        GoMenu.Items.Add(new MenuItem { Header = "Find in notebooks…", InputGestureText = "Ctrl+Shift+F" });
+        ((MenuItem)GoMenu.Items[1]).Click += OnFindInNotebooks;
+        var tags = new MenuItem { Header = "Show _tags" };
+        tags.Click += (_, _) => LeftTabs.SelectedIndex = 1;
+        var todo = new MenuItem { Header = "Show _to-do list" };
+        todo.Click += (_, _) => LeftTabs.SelectedIndex = 2;
+        GoMenu.Items.Add(tags);
+        GoMenu.Items.Add(todo);
+        GoMenu.Items.Add(new Separator());
+
+        if (_vm.ActiveTab?.Path is { } current)
+        {
+            var toggle = new MenuItem { Header = _vm.IsFavorite(current) ? "Remove current page from _favorites" : "Add current page to _favorites" };
+            toggle.Click += (_, _) => _vm.ToggleFavorite(current);
+            GoMenu.Items.Add(toggle);
+        }
+
+        var favorites = new MenuItem { Header = "F_avorites" };
+        foreach (var path in _vm.Session.FavoritePages.Where(System.IO.File.Exists))
+        {
+            favorites.Items.Add(PageItem(path));
+        }
+
+        favorites.IsEnabled = favorites.Items.Count > 0;
+        GoMenu.Items.Add(favorites);
+
+        var recent = new MenuItem { Header = "_Recent pages" };
+        foreach (var path in _vm.Session.RecentPages.Where(System.IO.File.Exists).Take(15))
+        {
+            recent.Items.Add(PageItem(path));
+        }
+
+        recent.IsEnabled = recent.Items.Count > 0;
+        GoMenu.Items.Add(recent);
+    }
+
+    private MenuItem PageItem(string path)
+    {
+        var item = new MenuItem
+        {
+            Header = System.IO.Path.GetFileNameWithoutExtension(path).Replace("_", "__"),
+            ToolTip = path,
+        };
+        item.Click += (_, _) => _vm.OpenDocument(path, preview: false);
+        return item;
+    }
+
+    private void OnTemplatesMenuOpened(object sender, RoutedEventArgs e)
+    {
+        if (!ReferenceEquals(e.OriginalSource, TemplatesMenu))
+        {
+            return;
+        }
+
+        TemplatesMenu.Items.Clear();
+        foreach (var template in _vm.TemplatesForCurrentNotebook())
+        {
+            var item = new MenuItem { Header = System.IO.Path.GetFileNameWithoutExtension(template).Replace("_", "__") };
+            item.Click += (_, _) => _vm.NewPageFromTemplate(template);
+            TemplatesMenu.Items.Add(item);
+        }
+
+        if (TemplatesMenu.Items.Count > 0)
+        {
+            TemplatesMenu.Items.Add(new Separator());
+        }
+
+        var edit = new MenuItem { Header = "Edit templates…" };
+        edit.Click += (_, _) => _vm.OpenTemplatesFolder();
+        TemplatesMenu.Items.Add(edit);
+    }
+
     private static void ShowMenu(ContextMenu menu, FrameworkElement target)
     {
         menu.PlacementTarget = target;

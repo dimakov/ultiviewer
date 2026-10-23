@@ -36,6 +36,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     {
         LoadNotebooks();
         InitializeSearch();
+        InitializeSummaries();
         _syncingSelection = true;
         try
         {

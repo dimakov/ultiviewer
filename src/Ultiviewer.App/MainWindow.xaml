@@ -143,8 +143,14 @@
                 <MenuItem Header="_Find in notebooks…" Click="OnFindInNotebooks" InputGestureText="Ctrl+Shift+F" />
                 <MenuItem Header="_Go to page…" Command="{Binding QuickOpenCommand}" InputGestureText="Ctrl+E" />
             </MenuItem>
+            <MenuItem x:Name="GoMenu" Header="_Go" SubmenuOpened="OnGoMenuOpened">
+                <MenuItem Header="(loading)" />
+            </MenuItem>
             <MenuItem Header="_Notebook">
                 <MenuItem Header="New _page" Command="{Binding NewPageCommand}" InputGestureText="Ctrl+N" />
+                <MenuItem x:Name="TemplatesMenu" Header="New page from _template" SubmenuOpened="OnTemplatesMenuOpened">
+                    <MenuItem Header="(loading)" />
+                </MenuItem>
                 <MenuItem Header="New _section" Command="{Binding NewSectionCommand}" InputGestureText="Ctrl+Shift+N" />
                 <MenuItem Header="New sub_page" Command="{Binding NewSubpageCommand}" />
                 <Separator />
@@ -193,17 +199,27 @@
                 <ColumnDefinition Width="*" MinWidth="320" />
             </Grid.ColumnDefinitions>
 
-            <Grid Grid.Column="0">
-                <views:NotebookTree x:Name="Tree" Margin="4,4,0,4" />
-                <StackPanel Margin="20" VerticalAlignment="Center"
-                            Visibility="{Binding HasNotebooks, Converter={StaticResource InverseBoolToVisibility}}">
-                    <TextBlock Margin="0,0,0,12" FontSize="16" FontWeight="SemiBold" Text="No notebooks yet" />
-                    <TextBlock Margin="0,0,0,16" TextWrapping="Wrap" Opacity="0.8"
-                               Text="A notebook is a folder of Markdown files. Create a new one, or open a folder you already have." />
-                    <Button Margin="0,0,0,8" HorizontalAlignment="Stretch" Content="Create a notebook…" Command="{Binding NewNotebookCommand}" />
-                    <Button HorizontalAlignment="Stretch" Content="Open a folder…" Command="{Binding OpenNotebookFolderCommand}" />
-                </StackPanel>
-            </Grid>
+            <TabControl x:Name="LeftTabs" Grid.Column="0" Margin="4,0,0,4" BorderThickness="0" Background="Transparent">
+                <TabItem Header="Notebooks" AutomationProperties.Name="Notebooks pane">
+                    <Grid>
+                        <views:NotebookTree x:Name="Tree" Margin="0,4,0,0" />
+                        <StackPanel Margin="20" VerticalAlignment="Center"
+                                    Visibility="{Binding HasNotebooks, Converter={StaticResource InverseBoolToVisibility}}">
+                            <TextBlock Margin="0,0,0,12" FontSize="16" FontWeight="SemiBold" Text="No notebooks yet" />
+                            <TextBlock Margin="0,0,0,16" TextWrapping="Wrap" Opacity="0.8"
+                                       Text="A notebook is a folder of Markdown files. Create a new one, or open a folder you already have." />
+                            <Button Margin="0,0,0,8" HorizontalAlignment="Stretch" Content="Create a notebook…" Command="{Binding NewNotebookCommand}" />
+                            <Button HorizontalAlignment="Stretch" Content="Open a folder…" Command="{Binding OpenNotebookFolderCommand}" />
+                        </StackPanel>
+                    </Grid>
+                </TabItem>
+                <TabItem Header="Tags" AutomationProperties.Name="Tags pane">
+                    <views:TagsPane />
+                </TabItem>
+                <TabItem Header="To-do" AutomationProperties.Name="To-do pane">
+                    <views:TodoPane />
+                </TabItem>
+            </TabControl>
 
             <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="Transparent"
                           ResizeBehavior="PreviousAndNext" Focusable="False" />
