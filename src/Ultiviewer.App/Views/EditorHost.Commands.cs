@@ -121,7 +121,9 @@ public partial class EditorHost
     /// <summary>AvalonEdit binds some of our keys (Ctrl+D deletes a line there); ours win.</summary>
     private void RemoveConflictingAvalonBindings()
     {
-        var ours = EditorCommands.WithGestures.SelectMany(c => c.InputGestures.OfType<KeyGesture>()).ToList();
+        var ours = EditorCommands.WithGestures.SelectMany(c => c.InputGestures.OfType<KeyGesture>())
+            .Concat(Services.KeyboardShortcuts.DefaultEditorGestures())
+            .ToList();
         bool Conflicts(KeyGesture g) => ours.Any(o => o.Key == g.Key && o.Modifiers == g.Modifiers);
 
         var handler = Editor.TextArea.DefaultInputHandler;

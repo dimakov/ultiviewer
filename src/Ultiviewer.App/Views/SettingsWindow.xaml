@@ -1,0 +1,109 @@
+<Window x:Class="Ultiviewer.App.Views.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Settings" Width="680" Height="720" MinWidth="520" MinHeight="420"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+    <Window.Resources>
+        <Style x:Key="Section" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="0,18,0,8" />
+        </Style>
+        <Style x:Key="Label" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="0,0,12,0" />
+        </Style>
+    </Window.Resources>
+    <DockPanel>
+        <StackPanel DockPanel.Dock="Bottom" Margin="20,10,20,16" HorizontalAlignment="Right" Orientation="Horizontal">
+            <Button MinWidth="96" Content="Save" IsDefault="True" Click="OnSave" />
+            <Button MinWidth="96" Margin="8,0,0,0" Content="Cancel" IsCancel="True" />
+        </StackPanel>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="20,0,20,0">
+                <TextBlock Style="{StaticResource Section}" Text="Appearance" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="180" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <TextBlock Style="{StaticResource Label}" Text="Theme" />
+                    <ComboBox Grid.Column="1" ItemsSource="{Binding Themes}" SelectedItem="{Binding Theme}" AutomationProperties.Name="Theme" />
+                    <TextBlock Grid.Row="1" Margin="0,8,12,0" Style="{StaticResource Label}" Text="Editor font" />
+                    <ComboBox Grid.Row="1" Grid.Column="1" Margin="0,8,0,0" IsEditable="True" ItemsSource="{Binding Fonts}"
+                              Text="{Binding EditorFontFamily, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Editor font" />
+                    <TextBlock Grid.Row="2" Margin="0,8,12,0" Style="{StaticResource Label}" Text="Font size" />
+                    <TextBox Grid.Row="2" Grid.Column="1" Width="90" Margin="0,8,0,0" HorizontalAlignment="Left"
+                             Text="{Binding EditorFontSize, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Font size" />
+                </Grid>
+                <CheckBox Margin="0,10,0,0" Content="Word wrap" IsChecked="{Binding WordWrap}" />
+                <CheckBox Margin="0,6,0,0" Content="Line numbers" IsChecked="{Binding ShowLineNumbers}" />
+                <CheckBox Margin="0,6,0,0" Content="Show whitespace and line endings" IsChecked="{Binding ShowWhitespace}" />
+                <CheckBox Margin="0,6,0,0" Content="Highlight the current line" IsChecked="{Binding HighlightCurrentLine}" />
+
+                <TextBlock Style="{StaticResource Section}" Text="Saving" />
+                <CheckBox Content="Save notebook pages automatically (like OneNote)" IsChecked="{Binding AutosaveNotebookPages}" />
+                <CheckBox Margin="0,6,0,0" Content="Save other files automatically too (otherwise Ctrl+S, like Notepad++)" IsChecked="{Binding AutosaveExternalFiles}" />
+                <StackPanel Margin="0,8,0,0" Orientation="Horizontal">
+                    <TextBlock Style="{StaticResource Label}" Text="Save after the last keystroke, in milliseconds" />
+                    <TextBox Width="90" Text="{Binding AutosaveDelayMs, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Autosave delay in milliseconds" />
+                </StackPanel>
+
+                <TextBlock Style="{StaticResource Section}" Text="New pages and files" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="180" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <TextBlock Style="{StaticResource Label}" Text="Line endings" />
+                    <ComboBox Grid.Column="1" ItemsSource="{Binding LineEndings}" DisplayMemberPath="Value" SelectedValuePath="Key"
+                              SelectedValue="{Binding DefaultLineEnding}" AutomationProperties.Name="Line endings for new files" />
+                    <TextBlock Grid.Row="1" Margin="0,8,12,0" Style="{StaticResource Label}" Text="Markdown opens in" />
+                    <ComboBox Grid.Row="1" Grid.Column="1" Margin="0,8,0,0" ItemsSource="{Binding ViewModes}" SelectedItem="{Binding DefaultMarkdownViewMode}" AutomationProperties.Name="Default view for Markdown" />
+                    <TextBlock Grid.Row="2" Margin="0,8,12,0" Style="{StaticResource Label}" Text="Date / time format" />
+                    <StackPanel Grid.Row="2" Grid.Column="1" Margin="0,8,0,0" Orientation="Horizontal">
+                        <TextBox Width="120" Text="{Binding DateFormat, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Date format" />
+                        <TextBox Width="90" Margin="8,0,0,0" Text="{Binding TimeFormat, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Time format" />
+                        <TextBlock Margin="12,0,0,0" VerticalAlignment="Center" Opacity="0.7" Text="{Binding DatePreview}" />
+                    </StackPanel>
+                </Grid>
+                <CheckBox Margin="0,10,0,0" Content="Write a UTF-8 byte-order mark (BOM) in new files" IsChecked="{Binding DefaultUtf8Bom}" />
+
+                <TextBlock Style="{StaticResource Section}" Text="Windows integration" />
+                <TextBlock TextWrapping="Wrap" Opacity="0.8"
+                           Text="Adds Ultiviewer to Explorer's &quot;Open with&quot; list for .md, .markdown and .txt files (for your user only). To make it the default, right-click a .md file → Open with → Choose another app → Ultiviewer → Always." />
+                <StackPanel Margin="0,8,0,0" Orientation="Horizontal">
+                    <Button x:Name="AssociateButton" Content="Add to &quot;Open with&quot;" Click="OnAssociate" />
+                    <Button Margin="8,0,0,0" Content="Remove" Click="OnUnassociate" />
+                    <TextBlock Margin="12,0,0,0" VerticalAlignment="Center" Opacity="0.7"
+                               Text="Registered" Visibility="{Binding IsAssociated, Converter={StaticResource BoolToVisibility}}" />
+                </StackPanel>
+                <Button Margin="0,8,0,0" HorizontalAlignment="Left" Content="Open the settings folder" Click="OnOpenSettingsFolder" />
+
+                <TextBlock Style="{StaticResource Section}" Text="Keyboard shortcuts" />
+                <TextBlock TextWrapping="Wrap" Opacity="0.8"
+                           Text="To change a shortcut, add it to &quot;shortcuts&quot; in settings.json, e.g. &quot;DuplicateLine&quot;: &quot;Ctrl+Alt+D&quot; (an empty value removes it), then restart." />
+                <ListView Margin="0,8,0,20" MaxHeight="320" ItemsSource="{Binding Shortcuts}" AutomationProperties.Name="Keyboard shortcuts">
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn Width="220" Header="Command" DisplayMemberBinding="{Binding Description}" />
+                            <GridViewColumn Width="170" Header="Shortcut" DisplayMemberBinding="{Binding Gesture}" />
+                            <GridViewColumn Width="170" Header="Name in settings.json" DisplayMemberBinding="{Binding Name}" />
+                        </GridView>
+                    </ListView.View>
+                </ListView>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

@@ -2,7 +2,17 @@
 
 A native Windows note-taking app: OneNote's notebook → section → page hierarchy on top of plain Markdown files, Notepad++-style tabs and editing, and a live Markdown preview.
 
-See [PLAN.md](PLAN.md) for goals and milestones and [docs/hld/](docs/hld/) for the design of each feature.
+Notes are ordinary `.md` files in ordinary folders, so Explorer, git, OneDrive and other editors keep working with them.
+
+## Features
+
+- **Notebooks**: any folder is a notebook; subfolders are sections; `Title.md` is a page; `Title/` next to it holds subpages; `Title.assets/` holds pasted images and attachments. Drag and drop to reorder, nest and move; section colors; Recycle Bin deletes; changes made outside the app show up immediately.
+- **Editor**: tabs (preview tabs, pinning, reopen closed), syntax highlighting for Markdown and many languages, encoding and line endings preserved byte for byte, light/dark themes.
+- **Saving**: notebook pages save themselves (like OneNote); other files use Ctrl+S (like Notepad++); unsaved buffers survive crashes and restarts; files changed by other programs reload or ask.
+- **Preview**: Edit / Split / Preview per tab (Ctrl+Shift+V) with scroll sync, tables, task lists, math, Mermaid diagrams, highlighted code, `[[wiki links]]` and `#tags`; offline and locked down (no scripts from notes).
+- **Search** (Ctrl+Shift+F): indexed, live, accent- and case-insensitive, substring matching (works for Hebrew prefixes and code identifiers), `"phrases"`, `OR`, `-exclude`, `#tag`, `is:todo`; replace across the listed pages. **Go to page** (Ctrl+E).
+- **Notepad++ tools**: find/replace bar with regex, go to line, duplicate/move/delete/join/sort lines, case conversion, bookmarks, column selection, smart highlighting.
+- **OneNote conveniences**: paste screenshots, drop files as attachments, Ctrl+1 to-dos and a To-do pane across notebooks, Tags pane, templates, favorites and recent pages, list continuation, `[[` completion, links that follow renames and moves.
 
 ## Build
 
@@ -12,7 +22,7 @@ Requires the .NET 10 SDK. Visual Studio is not needed.
 build.cmd            :: build everything and run the tests
 build.cmd build      :: build only
 build.cmd run        :: build and start the app
-build.cmd publish    :: self-contained release build -> artifacts\Ultiviewer-win-x64.zip
+build.cmd publish    :: self-contained release -> artifacts\Ultiviewer-win-x64.zip
 ```
 
 `build.cmd` prefers a per-user SDK in `%LOCALAPPDATA%\Microsoft\dotnet` (installed with `dotnet-install.ps1 -Channel 10.0`) and otherwise uses the `dotnet` on `PATH`.
@@ -25,12 +35,24 @@ cmd.exe /c "cd /d C:\Users\intel-nuc\Documents\codex\ultiviewer && build.cmd"
 
 The app is built self-contained (`win-x64`), so `Ultiviewer.exe` runs without a machine-wide .NET 10 runtime.
 
+## Where things are stored
+
+| What | Where |
+|---|---|
+| Notes | Your notebook folders |
+| Order and colors | `.ultiviewer.json` (hidden) inside notebook folders |
+| Settings | `%APPDATA%\Ultiviewer\settings.json` |
+| Session, search index, unsaved-buffer backups, WebView2 data, error log | `%LOCALAPPDATA%\Ultiviewer\` |
+
+Set `ULTIVIEWER_HOME=<folder>` to keep all of the above (except notes) in one folder — handy for testing.
+
 ## Layout
 
 | Path | Contents |
 |---|---|
-| `src/Ultiviewer.Core` | UI-free logic: notebooks, files, Markdown, search, settings. Unit-tested. |
+| `src/Ultiviewer.Core` | UI-free logic: notebooks, files, Markdown, links, search, settings. Unit-tested. |
 | `src/Ultiviewer.App` | WPF application: windows, view models, editor and preview hosts. |
+| `src/Ultiviewer.App/PreviewAssets` | Preview shell page and bundled JS/CSS libraries (see `vendor/NOTICE.md`). |
 | `tests/Ultiviewer.Core.Tests` | xUnit tests for Core. |
 | `docs/hld` | High-level design documents, one per feature. |
 | `research` | Background research (OneNote search internals). |

@@ -31,6 +31,56 @@ public partial class MainWindow : Window
         };
         ResultsSplitter.DragCompleted += (_, _) => _vm.Session.ResultsHeight = ResultsRow.ActualHeight;
         PreviewKeyDown += OnWindowPreviewKeyDown;
+        Services.KeyboardShortcuts.BindApplicationCommands(this, vm, vm.Settings.Shortcuts);
+        _vm.SettingsRequested += ShowSettings;
+    }
+
+    /// <summary>Brings the window forward and opens files handed over by a second launch.</summary>
+    public void OpenFromAnotherLaunch(IEnumerable<string> files)
+    {
+        if (WindowState == WindowState.Minimized)
+        {
+            WindowState = WindowState.Normal;
+        }
+
+        Activate();
+        foreach (var file in files)
+        {
+            _vm.OpenDocument(file, preview: false);
+        }
+    }
+
+    private void ShowSettings()
+    {
+        var settings = new SettingsViewModel(_vm.Settings);
+        if (new Views.SettingsWindow(settings) { Owner = this }.ShowDialog() == true)
+        {
+            settings.ApplyTo(_vm.Settings);
+            _vm.Settings.Save();
+            _vm.ReloadSettingsIntoView();
+        }
+    }
+
+    private void OnOpenErrorLog(object sender, RoutedEventArgs e)
+    {
+        if (System.IO.File.Exists(Services.ErrorLog.FilePath))
+        {
+            _vm.OpenDocument(Services.ErrorLog.FilePath, preview: false);
+        }
+        else
+        {
+            _vm.StatusMessage = "No errors have been logged.";
+        }
+    }
+
+    private void OnAbout(object sender, RoutedEventArgs e)
+    {
+        var version = typeof(MainWindow).Assembly.GetName().Version;
+        MessageBox.Show(this,
+            $"{Core.AppInfo.Name} {version?.ToString(3)}\n\nNotes as plain Markdown files: OneNote's notebooks, Notepad++'s editing.\n\n"
+            + $"Settings: {Core.Settings.AppPaths.RoamingDirectory}\nIndex, session and backups: {Core.Settings.AppPaths.LocalDirectory}\n\n"
+            + "Bundled: AvalonEdit (MIT), Markdig (BSD-2), CommunityToolkit.Mvvm (MIT), Microsoft.Data.Sqlite (MIT), WebView2 SDK, highlight.js (BSD-3), Mermaid (MIT), KaTeX (MIT).",
+            "About " + Core.AppInfo.Name, MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     private void UpdateResultsRow() =>
@@ -38,11 +88,50 @@ public partial class MainWindow : Window
 
     private void OnWindowPreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
     {
+        if (e.Key == System.Windows.Input.Key.F6 && System.Windows.Input.Keyboard.Modifiers is System.Windows.Input.ModifierKeys.None or System.Windows.Input.ModifierKeys.Shift)
+        {
+            CyclePane(forward: System.Windows.Input.Keyboard.Modifiers == System.Windows.Input.ModifierKeys.None);
+            e.Handled = true;
+            return;
+        }
+
         if (e.Key == System.Windows.Input.Key.F && System.Windows.Input.Keyboard.Modifiers == (System.Windows.Input.ModifierKeys.Control | System.Windows.Input.ModifierKeys.Shift))
         {
             OnFindInNotebooks(this, e);
             e.Handled = true;
         }
+    }
+
+    /// <summary>F6 / Shift+F6: move keyboard focus between the left pane, the editor and the search results.</summary>
+    private void CyclePane(bool forward)
+    {
+        var panes = new List<(Func<bool> HasFocus, Action Focus)>
+        {
+            (() => LeftTabs.IsKeyboardFocusWithin, () =>
+            {
+                if (LeftTabs.SelectedIndex == 0)
+                {
+                    Tree.FocusTree();
+                }
+                else
+                {
+                    (LeftTabs.SelectedItem as TabItem)?.Focus();
+                }
+            }),
+        };
+        if (_vm.HasTabs)
+        {
+            panes.Add((() => EditorView.IsKeyboardFocusWithin || Tabs.IsKeyboardFocusWithin, _vm.FocusEditor));
+        }
+
+        if (_vm.IsSearchPanelOpen)
+        {
+            panes.Add((() => SearchView.IsKeyboardFocusWithin, SearchView.FocusQuery));
+        }
+
+        var current = panes.FindIndex(p => p.HasFocus());
+        var next = current < 0 ? 0 : (current + (forward ? 1 : -1) + panes.Count) % panes.Count;
+        panes[next].Focus();
     }
 
     private void OnFindInNotebooks(object sender, RoutedEventArgs e) =>

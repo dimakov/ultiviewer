@@ -7,6 +7,7 @@
     <AssemblyName>Ultiviewer</AssemblyName>
     <RootNamespace>Ultiviewer.App</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\ultiviewer.ico</ApplicationIcon>
     <!-- Self-contained so the exe runs without a machine-wide .NET 10 runtime. -->
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
@@ -22,6 +23,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Editor\Markdown.xshd" LogicalName="Ultiviewer.Markdown.xshd" />
+    <Resource Include="Assets\ultiviewer.ico" />
     <!-- Preview shell and vendor libraries, served to WebView2 from <app>\Preview via a virtual host. -->
     <Content Include="PreviewAssets\**\*" Link="Preview\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

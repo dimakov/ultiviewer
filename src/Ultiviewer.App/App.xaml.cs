@@ -10,13 +10,23 @@ namespace Ultiviewer.App;
 public partial class App : Application
 {
     private MainViewModel? _viewModel;
+    private SingleInstance? _instance;
 
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
         DispatcherUnhandledException += OnUnhandledException;
 
+        var files = e.Args.Where(arg => !arg.StartsWith("--", StringComparison.Ordinal)).ToList();
+        _instance = SingleInstance.Acquire(files);
+        if (_instance is null)
+        {
+            Shutdown(); // the running instance opens the files
+            return;
+        }
+
         var settings = AppSettings.Load();
+        KeyboardShortcuts.ApplyEditorOverrides(settings.Shortcuts);
         var session = SessionState.Load();
         ThemeService.Instance.Apply(settings.Theme);
 
@@ -24,12 +34,14 @@ public partial class App : Application
         var window = new MainWindow(_viewModel);
         MainWindow = window;
         window.Show();
-        _viewModel.Initialize(e.Args.Where(arg => !arg.StartsWith("--", StringComparison.Ordinal)));
+        _viewModel.Initialize(files);
+        _instance.Listen(paths => Dispatcher.BeginInvoke(() => window.OpenFromAnotherLaunch(paths)));
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
         _viewModel?.Dispose();
+        _instance?.Dispose();
         base.OnExit(e);
     }
 

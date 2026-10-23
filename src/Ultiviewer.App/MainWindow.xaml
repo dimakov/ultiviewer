@@ -4,6 +4,7 @@
         xmlns:views="clr-namespace:Ultiviewer.App.Views"
         xmlns:editor="clr-namespace:Ultiviewer.App.Editor"
         Title="{Binding WindowTitle}" Width="1280" Height="820" MinWidth="640" MinHeight="400"
+        Icon="pack://application:,,,/Assets/ultiviewer.ico"
         AllowDrop="True" Drop="OnWindowDrop">
     <Window.Resources>
         <Style x:Key="ViewModeButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
@@ -26,32 +27,6 @@
         </Style>
     </Window.Resources>
 
-    <Window.InputBindings>
-        <KeyBinding Gesture="Ctrl+N" Command="{Binding NewPageCommand}" />
-        <KeyBinding Gesture="Ctrl+Shift+N" Command="{Binding NewSectionCommand}" />
-        <KeyBinding Gesture="F5" Command="{Binding RefreshCommand}" />
-        <KeyBinding Gesture="Ctrl+T" Command="{Binding NewFileCommand}" />
-        <KeyBinding Gesture="Ctrl+O" Command="{Binding OpenFileCommand}" />
-        <KeyBinding Gesture="Ctrl+S" Command="{Binding SaveCommand}" />
-        <KeyBinding Gesture="Ctrl+Alt+S" Command="{Binding SaveAsCommand}" />
-        <KeyBinding Gesture="Ctrl+Shift+S" Command="{Binding SaveAllCommand}" />
-        <KeyBinding Gesture="Ctrl+W" Command="{Binding CloseCommand}" />
-        <KeyBinding Gesture="Ctrl+F4" Command="{Binding CloseCommand}" />
-        <KeyBinding Gesture="Ctrl+Shift+T" Command="{Binding ReopenClosedCommand}" />
-        <KeyBinding Gesture="Ctrl+Tab" Command="{Binding NextTabCommand}" />
-        <KeyBinding Gesture="Ctrl+Shift+Tab" Command="{Binding PreviousTabCommand}" />
-        <KeyBinding Gesture="Ctrl+PageDown" Command="{Binding NextTabCommand}" />
-        <KeyBinding Gesture="Ctrl+PageUp" Command="{Binding PreviousTabCommand}" />
-        <KeyBinding Gesture="Ctrl+OemPlus" Command="{Binding ZoomInCommand}" />
-        <KeyBinding Gesture="Ctrl+Add" Command="{Binding ZoomInCommand}" />
-        <KeyBinding Gesture="Ctrl+OemMinus" Command="{Binding ZoomOutCommand}" />
-        <KeyBinding Gesture="Ctrl+Subtract" Command="{Binding ZoomOutCommand}" />
-        <KeyBinding Gesture="Ctrl+D0" Command="{Binding ZoomResetCommand}" />
-        <KeyBinding Gesture="Ctrl+Shift+V" Command="{Binding CycleViewModeCommand}" />
-        <KeyBinding Gesture="Ctrl+E" Command="{Binding QuickOpenCommand}" />
-        <KeyBinding Gesture="Ctrl+NumPad0" Command="{Binding ZoomResetCommand}" />
-    </Window.InputBindings>
-
     <DockPanel>
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="_File">
@@ -69,6 +44,8 @@
                 <Separator />
                 <MenuItem Header="_Close tab" Command="{Binding CloseCommand}" InputGestureText="Ctrl+W" />
                 <MenuItem Header="Close all tabs" Command="{Binding CloseAllCommand}" />
+                <Separator />
+                <MenuItem Header="Se_ttings…" Command="{Binding OpenSettingsCommand}" InputGestureText="Ctrl+," />
                 <Separator />
                 <MenuItem Header="E_xit" Click="OnExit" InputGestureText="Alt+F4" />
             </MenuItem>
@@ -160,6 +137,12 @@
                 <Separator />
                 <MenuItem Header="Re_fresh" Command="{Binding RefreshCommand}" InputGestureText="F5" />
                 <MenuItem Header="_Close notebook" Command="{Binding CloseNotebookCommand}" />
+            </MenuItem>
+            <MenuItem Header="_Help">
+                <MenuItem Header="_Keyboard shortcuts" Command="{Binding OpenSettingsCommand}" />
+                <MenuItem Header="Open the error _log" Click="OnOpenErrorLog" />
+                <Separator />
+                <MenuItem Header="_About Ultiviewer" Click="OnAbout" />
             </MenuItem>
         </Menu>
 

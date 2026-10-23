@@ -90,6 +90,12 @@ public sealed partial class MainViewModel
         OnPropertyChanged(nameof(IsThemeDark));
     }
 
+    /// <summary>Asks the view to show the settings window.</summary>
+    public event Action? SettingsRequested;
+
+    [RelayCommand]
+    private void OpenSettings() => SettingsRequested?.Invoke();
+
     /// <summary>Re-reads all settings after the settings window saved them.</summary>
     public void ReloadSettingsIntoView()
     {
@@ -99,6 +105,11 @@ public sealed partial class MainViewModel
         }
 
         ThemeService.Instance.Apply(Settings.Theme);
+        foreach (var tab in Tabs)
+        {
+            UpdateNotebookPageFlag(tab); // autosave rules may have changed
+        }
+
         EditorSettingsChanged?.Invoke();
     }
 }
