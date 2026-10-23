@@ -1,0 +1,170 @@
+:root {
+  --bg: #ffffff;
+  --fg: #1f2328;
+  --muted: #59636e;
+  --border: #d1d9e0;
+  --subtle: #f6f8fa;
+  --link: #0969da;
+  --accent: #3a7bd5;
+  --mark: #fff8c5;
+  --quote: #59636e;
+  --tag-bg: #ede4fb;
+  --tag-fg: #6639ba;
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --bg: #1e1e1e;
+  --fg: #e6e6e6;
+  --muted: #9198a1;
+  --border: #3d444d;
+  --subtle: #262a30;
+  --link: #6cb6ff;
+  --accent: #5a9bf0;
+  --mark: #4d4413;
+  --quote: #9198a1;
+  --tag-bg: #3a2e55;
+  --tag-fg: #d2a8ff;
+  color-scheme: dark;
+}
+
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+body {
+  font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  padding: 20px 28px 60vh;
+  overflow-wrap: break-word;
+}
+
+header#page-header {
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+}
+
+header#page-header h1 {
+  font-size: 1.9em;
+  font-weight: 600;
+  margin: 0;
+}
+
+#page-meta {
+  color: var(--muted);
+  font-size: 0.85em;
+  margin-top: 4px;
+}
+
+.markdown-body { max-width: 980px; }
+.markdown-body > :first-child { margin-top: 0; }
+
+.markdown-body h1, .markdown-body h2, .markdown-body h3,
+.markdown-body h4, .markdown-body h5, .markdown-body h6 {
+  font-weight: 600;
+  line-height: 1.25;
+  margin: 1.4em 0 0.6em;
+}
+
+.markdown-body h1 { font-size: 1.9em; border-bottom: 1px solid var(--border); padding-bottom: 0.3em; }
+.markdown-body h2 { font-size: 1.5em; border-bottom: 1px solid var(--border); padding-bottom: 0.3em; }
+.markdown-body h3 { font-size: 1.25em; }
+.markdown-body h4 { font-size: 1em; }
+.markdown-body h5 { font-size: 0.9em; }
+.markdown-body h6 { font-size: 0.85em; color: var(--muted); }
+
+.markdown-body p, .markdown-body ul, .markdown-body ol, .markdown-body dl,
+.markdown-body table, .markdown-body pre, .markdown-body blockquote, .markdown-body details {
+  margin: 0 0 1em;
+}
+
+.markdown-body a { color: var(--link); text-decoration: none; }
+.markdown-body a:hover { text-decoration: underline; }
+.markdown-body a.wikilink { border-bottom: 1px dashed var(--link); }
+.markdown-body a.wikilink:hover { text-decoration: none; border-bottom-style: solid; }
+
+.markdown-body ul, .markdown-body ol { padding-left: 2em; }
+.markdown-body li + li { margin-top: 0.2em; }
+.markdown-body li.task-list-item { list-style: none; }
+.markdown-body li.task-list-item input[type="checkbox"] {
+  margin: 0 0.4em 0 -1.4em;
+  vertical-align: middle;
+  width: 1em;
+  height: 1em;
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+
+.markdown-body blockquote {
+  border-left: 0.25em solid var(--border);
+  color: var(--quote);
+  padding: 0 1em;
+  margin-left: 0;
+}
+
+.markdown-body code, .markdown-body kbd, .markdown-body pre {
+  font-family: "Cascadia Mono", Consolas, "Courier New", monospace;
+  font-size: 0.88em;
+}
+
+.markdown-body :not(pre) > code {
+  background: var(--subtle);
+  border-radius: 6px;
+  padding: 0.15em 0.4em;
+}
+
+.markdown-body pre {
+  background: var(--subtle);
+  border-radius: 6px;
+  padding: 12px 16px;
+  overflow: auto;
+  line-height: 1.45;
+}
+
+.markdown-body pre code.hljs { background: transparent; padding: 0; }
+
+.markdown-body kbd {
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  padding: 0.1em 0.4em;
+}
+
+.markdown-body table { border-collapse: collapse; display: block; overflow: auto; width: max-content; max-width: 100%; }
+.markdown-body th, .markdown-body td { border: 1px solid var(--border); padding: 6px 13px; }
+.markdown-body th { font-weight: 600; background: var(--subtle); }
+.markdown-body tr:nth-child(2n) td { background: color-mix(in srgb, var(--subtle) 50%, transparent); }
+
+.markdown-body img { max-width: 100%; background: transparent; }
+.markdown-body hr { border: 0; border-top: 1px solid var(--border); margin: 1.5em 0; }
+.markdown-body mark { background: var(--mark); color: inherit; }
+.markdown-body del { color: var(--muted); }
+
+.markdown-body .mermaid { text-align: center; margin: 0 0 1em; }
+.markdown-body .mermaid svg { max-width: 100%; height: auto; }
+.markdown-body .mermaid-error {
+  color: #d64545;
+  font-family: Consolas, monospace;
+  white-space: pre-wrap;
+  text-align: left;
+}
+
+.markdown-body .math-display, .markdown-body div.math { overflow-x: auto; overflow-y: hidden; }
+
+.markdown-body .tag {
+  background: var(--tag-bg);
+  color: var(--tag-fg);
+  border-radius: 10px;
+  padding: 0 0.5em;
+  font-size: 0.9em;
+  white-space: nowrap;
+}
+
+.markdown-body .footnotes { color: var(--muted); font-size: 0.9em; border-top: 1px solid var(--border); }
+
+.flash { animation: flash 1.2s ease-out; }
+@keyframes flash { from { background: var(--mark); } to { background: transparent; } }

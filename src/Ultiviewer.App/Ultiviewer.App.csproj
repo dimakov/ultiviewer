@@ -17,10 +17,13 @@
   <ItemGroup>
     <PackageReference Include="AvalonEdit" />
     <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="Microsoft.Web.WebView2" />
   </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Include="Editor\Markdown.xshd" LogicalName="Ultiviewer.Markdown.xshd" />
+    <!-- Preview shell and vendor libraries, served to WebView2 from <app>\Preview via a virtual host. -->
+    <Content Include="PreviewAssets\**\*" Link="Preview\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

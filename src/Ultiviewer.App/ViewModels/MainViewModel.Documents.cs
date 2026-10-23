@@ -138,6 +138,7 @@ public sealed partial class MainViewModel
 
         UpdateWordCount();
         OnPropertyChanged(nameof(SaveStatus));
+        OnPropertyChanged(nameof(ActiveViewMode));
     }
 
     private void OnActiveTabPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -145,6 +146,11 @@ public sealed partial class MainViewModel
         if (e.PropertyName is nameof(DocumentTabViewModel.IsDirty) or nameof(DocumentTabViewModel.Title))
         {
             OnPropertyChanged(nameof(WindowTitle));
+        }
+
+        if (e.PropertyName is nameof(DocumentTabViewModel.ViewMode) or nameof(DocumentTabViewModel.IsMarkdown) or nameof(DocumentTabViewModel.Language))
+        {
+            OnPropertyChanged(nameof(ActiveViewMode));
         }
 
         OnPropertyChanged(nameof(SaveStatus));

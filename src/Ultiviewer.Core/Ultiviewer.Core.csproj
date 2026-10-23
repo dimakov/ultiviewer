@@ -6,6 +6,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Markdig" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="Ultiviewer.Core.Tests" />
   </ItemGroup>
 

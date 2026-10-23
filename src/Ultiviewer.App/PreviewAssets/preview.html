@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <!-- Scripts only from the app's own assets: script tags or inline handlers inside notes never run. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src https://app.ultiviewer.example; style-src https://app.ultiviewer.example 'unsafe-inline'; img-src https: http: data: blob:; font-src https://app.ultiviewer.example data:; media-src https: http: data: blob:">
+  <base href="https://app.ultiviewer.example/">
+  <title>Preview</title>
+  <link rel="stylesheet" href="https://app.ultiviewer.example/preview.css">
+  <link rel="stylesheet" id="hljs-light" href="https://app.ultiviewer.example/vendor/highlight/github.min.css">
+  <link rel="stylesheet" id="hljs-dark" href="https://app.ultiviewer.example/vendor/highlight/github-dark.min.css" disabled>
+  <link rel="stylesheet" href="https://app.ultiviewer.example/vendor/katex/katex.min.css">
+</head>
+<body>
+  <header id="page-header" hidden>
+    <h1 id="page-title"></h1>
+    <div id="page-meta"></div>
+  </header>
+  <main id="content" class="markdown-body"></main>
+  <script src="https://app.ultiviewer.example/vendor/highlight/highlight.min.js"></script>
+  <script src="https://app.ultiviewer.example/vendor/katex/katex.min.js"></script>
+  <script src="https://app.ultiviewer.example/vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="https://app.ultiviewer.example/preview.js"></script>
+</body>
+</html>

@@ -112,6 +112,9 @@ public sealed partial class DocumentTabViewModel : ObservableObject
 
     public double HorizontalOffset { get; set; }
 
+    /// <summary>Source line at the top of the preview (fractional, 1-based), for Preview-only mode.</summary>
+    public double PreviewLine { get; set; } = 1;
+
     /// <summary>Line to scroll to when the tab is next shown in the editor (1-based).</summary>
     public int? PendingLine { get; set; }
 

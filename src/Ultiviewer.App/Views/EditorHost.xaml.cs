@@ -39,6 +39,8 @@ public partial class EditorHost : UserControl
         Editor.PreviewMouseWheel += OnEditorMouseWheel;
         Editor.AddHandler(Hyperlink.RequestNavigateEvent, new System.Windows.Navigation.RequestNavigateEventHandler(OnRequestNavigate));
         Editor.ContextMenu = BuildContextMenu();
+        InitializePreview();
+        SplitterMoved += SavePreviewRatio;
     }
 
     public TextEditor TextEditor => Editor;
@@ -75,6 +77,7 @@ public partial class EditorHost : UserControl
             _vm.TabReloaded -= OnTabReloaded;
             _vm.CaptureEditorState -= CaptureCurrent;
             _vm.EditorSettingsChanged -= ApplySettings;
+            _vm.DocumentEdited -= OnDocumentEdited;
         }
 
         _vm = vm;
@@ -90,6 +93,7 @@ public partial class EditorHost : UserControl
         vm.TabReloaded += OnTabReloaded;
         vm.CaptureEditorState += CaptureCurrent;
         vm.EditorSettingsChanged += ApplySettings;
+        vm.DocumentEdited += OnDocumentEdited;
         ApplySettings();
         ApplyPalette();
         SwitchTo(vm.ActiveTab);
@@ -121,6 +125,7 @@ public partial class EditorHost : UserControl
         {
             Editor.Document = new TextDocument();
             Editor.SyntaxHighlighting = null;
+            ApplyViewMode();
             TabShown?.Invoke(null);
             return;
         }
@@ -129,6 +134,7 @@ public partial class EditorHost : UserControl
         Editor.Document = tab.Document;
         ApplyHighlighting();
         UpdateCaretStatus();
+        ApplyViewMode();
         TabShown?.Invoke(tab);
         Dispatcher.BeginInvoke(() => RestoreView(tab), DispatcherPriority.Loaded);
     }
@@ -138,6 +144,11 @@ public partial class EditorHost : UserControl
         if (e.PropertyName is nameof(DocumentTabViewModel.Language))
         {
             ApplyHighlighting();
+            ApplyViewMode();
+        }
+        else if (e.PropertyName is nameof(DocumentTabViewModel.ViewMode) or nameof(DocumentTabViewModel.Path))
+        {
+            ApplyViewMode();
         }
     }
 

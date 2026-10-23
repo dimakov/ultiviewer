@@ -5,6 +5,15 @@
         Title="{Binding WindowTitle}" Width="1280" Height="820" MinWidth="640" MinHeight="400"
         AllowDrop="True" Drop="OnWindowDrop">
     <Window.Resources>
+        <Style x:Key="ViewModeButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="10,3" />
+            <Setter Property="Margin" Value="1,0" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Focusable" Value="False" />
+        </Style>
         <Style x:Key="StatusButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
@@ -37,6 +46,7 @@
         <KeyBinding Gesture="Ctrl+OemMinus" Command="{Binding ZoomOutCommand}" />
         <KeyBinding Gesture="Ctrl+Subtract" Command="{Binding ZoomOutCommand}" />
         <KeyBinding Gesture="Ctrl+D0" Command="{Binding ZoomResetCommand}" />
+        <KeyBinding Gesture="Ctrl+Shift+V" Command="{Binding CycleViewModeCommand}" />
         <KeyBinding Gesture="Ctrl+NumPad0" Command="{Binding ZoomResetCommand}" />
     </Window.InputBindings>
 
@@ -70,6 +80,11 @@
                 <MenuItem Command="ApplicationCommands.SelectAll" />
             </MenuItem>
             <MenuItem x:Name="ViewMenu" Header="_View">
+                <MenuItem Header="_Edit only" Command="{Binding SetViewModeCommand}" CommandParameter="Edit" />
+                <MenuItem Header="_Split: editor and preview" Command="{Binding SetViewModeCommand}" CommandParameter="Split" />
+                <MenuItem Header="_Preview only" Command="{Binding SetViewModeCommand}" CommandParameter="Preview" />
+                <MenuItem Header="Cycle view mode" Command="{Binding CycleViewModeCommand}" InputGestureText="Ctrl+Shift+V" />
+                <Separator />
                 <MenuItem Header="_Word wrap" IsCheckable="True" IsChecked="{Binding WordWrap}" />
                 <MenuItem Header="_Line numbers" IsCheckable="True" IsChecked="{Binding ShowLineNumbers}" />
                 <MenuItem Header="Show _whitespace" IsCheckable="True" IsChecked="{Binding ShowWhitespace}" />
@@ -155,7 +170,25 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
-                <views:TabStrip x:Name="Tabs" Grid.Row="0" />
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <views:TabStrip x:Name="Tabs" />
+                    <StackPanel Grid.Column="1" Margin="8,0,8,0" VerticalAlignment="Center" Orientation="Horizontal"
+                                Visibility="{Binding ActiveViewMode, Converter={StaticResource NullToVisibility}}">
+                        <Button Style="{StaticResource ViewModeButton}" Content="Edit" ToolTip="Editor only (Ctrl+Shift+V cycles)"
+                                Command="{Binding SetViewModeCommand}" CommandParameter="Edit"
+                                Background="{Binding ActiveViewMode, Converter={StaticResource SelectedValueBrush}, ConverterParameter=Edit}" />
+                        <Button Style="{StaticResource ViewModeButton}" Content="Split" ToolTip="Editor and preview side by side (Ctrl+Shift+V cycles)"
+                                Command="{Binding SetViewModeCommand}" CommandParameter="Split"
+                                Background="{Binding ActiveViewMode, Converter={StaticResource SelectedValueBrush}, ConverterParameter=Split}" />
+                        <Button Style="{StaticResource ViewModeButton}" Content="Preview" ToolTip="Preview only (Ctrl+Shift+V cycles)"
+                                Command="{Binding SetViewModeCommand}" CommandParameter="Preview"
+                                Background="{Binding ActiveViewMode, Converter={StaticResource SelectedValueBrush}, ConverterParameter=Preview}" />
+                    </StackPanel>
+                </Grid>
                 <views:EditorHost x:Name="EditorView" Grid.Row="1"
                                   Visibility="{Binding HasTabs, Converter={StaticResource BoolToVisibility}}" />
                 <TextBlock Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.6"
