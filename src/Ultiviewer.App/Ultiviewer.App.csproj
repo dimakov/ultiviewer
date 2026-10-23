@@ -32,4 +32,8 @@
     <ProjectReference Include="..\Ultiviewer.Core\Ultiviewer.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Ultiviewer.Snapshot" />
+  </ItemGroup>
+
 </Project>

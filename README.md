@@ -56,5 +56,6 @@ Set `ULTIVIEWER_HOME=<folder>` to keep all of the above (except notes) in one fo
 | `src/Ultiviewer.App` | WPF application: windows, view models, editor and preview hosts. |
 | `src/Ultiviewer.App/PreviewAssets` | Preview shell page and bundled JS/CSS libraries (see `vendor/NOTICE.md`). |
 | `tests/Ultiviewer.Core.Tests` | xUnit tests for Core. |
+| `tools/Ultiviewer.Snapshot` | Developer tool: renders the main window off-screen to PNG from a JSON script (see `docs/hld/live-preview.md`). |
 | `docs/hld` | High-level design documents, one per feature. |
 | `research` | Background research (OneNote search internals). |
