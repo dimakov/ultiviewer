@@ -45,14 +45,34 @@ public partial class App : Application
         base.OnExit(e);
     }
 
+    private static bool _reporting;
+
     private static void OnUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
         ErrorLog.Write(e.Exception, "Unhandled UI exception");
+        e.Handled = true;
+
+        // A failure that repeats on every layout pass must not stack message boxes (each one pumps messages).
+        if (_reporting)
+        {
+            return;
+        }
+
+        _reporting = true;
+        try
+        {
+            ShowError(e.Exception);
+        }
+        finally
+        {
+            _reporting = false;
+        }
+    }
+
+    private static void ShowError(Exception exception) =>
         MessageBox.Show(
-            $"Something went wrong:\n\n{e.Exception.Message}\n\nDetails were written to {ErrorLog.FilePath}.",
+            $"Something went wrong:\n\n{exception.Message}\n\nDetails were written to {ErrorLog.FilePath}.",
             Core.AppInfo.Name,
             MessageBoxButton.OK,
             MessageBoxImage.Error);
-        e.Handled = true;
-    }
 }

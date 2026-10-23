@@ -4,7 +4,7 @@
         xmlns:views="clr-namespace:Ultiviewer.App.Views"
         xmlns:editor="clr-namespace:Ultiviewer.App.Editor"
         Title="{Binding WindowTitle}" Width="1280" Height="820" MinWidth="640" MinHeight="400"
-        Icon="pack://application:,,,/Assets/ultiviewer.ico"
+        Icon="pack://application:,,,/Ultiviewer;component/Assets/ultiviewer.ico"
         AllowDrop="True" Drop="OnWindowDrop">
     <Window.Resources>
         <Style x:Key="ViewModeButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
