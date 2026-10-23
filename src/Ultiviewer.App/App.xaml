@@ -7,6 +7,7 @@
         <conv:BoolToVisibilityConverter x:Key="BoolToVisibility" />
         <conv:BoolToVisibilityConverter x:Key="InverseBoolToVisibility" Invert="True" />
         <conv:NullToVisibilityConverter x:Key="NullToVisibility" />
+        <conv:NonZeroToVisibilityConverter x:Key="NonZeroToVisibility" />
         <conv:HexToBrushConverter x:Key="HexToBrush" />
         <FontFamily x:Key="IconFont">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
     </Application.Resources>

@@ -1,0 +1,34 @@
+<UserControl x:Class="Ultiviewer.App.Views.EditorHost"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ae="http://icsharpcode.net/sharpdevelop/avalonedit">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <ContentControl x:Name="BarHost" Grid.Row="0" Focusable="False" />
+
+        <Grid x:Name="SplitGrid" Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition x:Name="EditorColumn" Width="*" />
+                <ColumnDefinition x:Name="SplitterColumn" Width="0" />
+                <ColumnDefinition x:Name="PreviewColumn" Width="0" />
+            </Grid.ColumnDefinitions>
+
+            <ae:TextEditor x:Name="Editor"
+                           Grid.Column="0"
+                           Padding="6,2,0,0"
+                           AutomationProperties.Name="Editor"
+                           HorizontalScrollBarVisibility="Auto"
+                           VerticalScrollBarVisibility="Visible" />
+
+            <GridSplitter x:Name="Splitter" Grid.Column="1" Width="5" HorizontalAlignment="Stretch"
+                          Background="Transparent" Focusable="False" ResizeBehavior="PreviousAndNext"
+                          DragCompleted="OnSplitterDragCompleted" />
+
+            <Border x:Name="PreviewHost" Grid.Column="2" />
+        </Grid>
+    </Grid>
+</UserControl>

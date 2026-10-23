@@ -32,16 +32,27 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _statusMessage = "";
 
-    public void Initialize()
+    public void Initialize(IEnumerable<string> startupFiles)
     {
         LoadNotebooks();
-        RestoreSelection();
+        _syncingSelection = true;
+        try
+        {
+            RestoreSelection();
+        }
+        finally
+        {
+            _syncingSelection = false;
+        }
+
+        InitializeDocuments(startupFiles);
     }
 
     /// <summary>Collects UI state into <see cref="Session"/> and writes settings and session to disk.</summary>
     public void SaveState()
     {
         CaptureNotebookState();
+        CaptureDocumentState();
         Session.Save();
         Settings.Save();
     }

@@ -1,6 +1,10 @@
 using System.ComponentModel;
+using System.Text;
 using System.Windows;
+using System.Windows.Controls;
+using Ultiviewer.App.Editor;
 using Ultiviewer.App.ViewModels;
+using Ultiviewer.Core.Files;
 
 namespace Ultiviewer.App;
 
@@ -14,6 +18,8 @@ public partial class MainWindow : Window
         _vm = vm;
         DataContext = vm;
         RestorePlacement();
+        Tree.OpenRequested += node => _vm.OpenDocument(node.Path, preview: false, focus: true);
+        Activated += (_, _) => _vm.CheckAllDiskStates();
     }
 
     protected override void OnClosing(CancelEventArgs e)
@@ -70,4 +76,105 @@ public partial class MainWindow : Window
     }
 
     private void OnExit(object sender, RoutedEventArgs e) => Close();
+
+    private void OnWindowDrop(object sender, DragEventArgs e)
+    {
+        if (!e.Handled && e.Data.GetData(DataFormats.FileDrop) is string[] files)
+        {
+            foreach (var file in files.Where(System.IO.File.Exists))
+            {
+                _vm.OpenDocument(file, preview: false);
+            }
+
+            e.Handled = true;
+        }
+    }
+
+    // ---- Status bar pickers ----
+
+    private void OnEncodingClick(object sender, RoutedEventArgs e)
+    {
+        if (_vm.ActiveTab is not { } tab)
+        {
+            return;
+        }
+
+        var menu = new ContextMenu();
+        var convert = new MenuItem { Header = "Save with encoding" };
+        foreach (var (name, encoding, bom) in EncodingChoices())
+        {
+            var item = new MenuItem { Header = name, IsCheckable = true, IsChecked = tab.Format.Encoding.CodePage == encoding.CodePage && tab.Format.HasBom == bom };
+            item.Click += (_, _) => _vm.SetEncoding(tab, encoding, bom);
+            convert.Items.Add(item);
+        }
+
+        menu.Items.Add(convert);
+        if (tab.Path is not null)
+        {
+            var reopen = new MenuItem { Header = "Reopen with encoding" };
+            foreach (var (name, encoding, bom) in EncodingChoices().Where(c => !c.Bom || c.Encoding.CodePage != 65001))
+            {
+                var item = new MenuItem { Header = name.Replace(" BOM", "") };
+                item.Click += (_, _) => _vm.ReopenWithEncoding(tab, encoding);
+                reopen.Items.Add(item);
+            }
+
+            menu.Items.Add(reopen);
+        }
+
+        ShowMenu(menu, (Button)sender);
+    }
+
+    private static IEnumerable<(string Name, Encoding Encoding, bool Bom)> EncodingChoices()
+    {
+        yield return ("UTF-8", TextFileFormat.Utf8, false);
+        yield return ("UTF-8 BOM", TextFileFormat.Utf8, true);
+        yield return ("UTF-16 LE BOM", new UnicodeEncoding(false, false), true);
+        yield return ("UTF-16 BE BOM", new UnicodeEncoding(true, false), true);
+        var ansi = TextFileFormat.Ansi;
+        yield return (new TextFileFormat(ansi, false, LineEnding.CrLf).EncodingName + " (ANSI)", ansi, false);
+    }
+
+    private void OnLineEndingClick(object sender, RoutedEventArgs e)
+    {
+        if (_vm.ActiveTab is not { } tab)
+        {
+            return;
+        }
+
+        var menu = new ContextMenu();
+        foreach (var (name, ending) in new[] { ("Windows (CRLF)", LineEnding.CrLf), ("Unix (LF)", LineEnding.Lf), ("Classic Mac (CR)", LineEnding.Cr) })
+        {
+            var item = new MenuItem { Header = name, IsCheckable = true, IsChecked = tab.Format.LineEnding == ending };
+            item.Click += (_, _) => _vm.SetLineEnding(tab, ending);
+            menu.Items.Add(item);
+        }
+
+        ShowMenu(menu, (Button)sender);
+    }
+
+    private void OnLanguageClick(object sender, RoutedEventArgs e)
+    {
+        if (_vm.ActiveTab is not { } tab)
+        {
+            return;
+        }
+
+        var menu = new ContextMenu();
+        foreach (var name in HighlightingRegistry.Instance.Names)
+        {
+            var item = new MenuItem { Header = name, IsCheckable = true, IsChecked = tab.Language == name };
+            item.Click += (_, _) => _vm.SetLanguage(tab, name);
+            menu.Items.Add(item);
+        }
+
+        ShowMenu(menu, (Button)sender);
+    }
+
+    private static void ShowMenu(ContextMenu menu, FrameworkElement target)
+    {
+        menu.PlacementTarget = target;
+        menu.Placement = System.Windows.Controls.Primitives.PlacementMode.Top;
+        menu.IsOpen = true;
+    }
 }

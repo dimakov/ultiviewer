@@ -1,0 +1,96 @@
+<UserControl x:Class="Ultiviewer.App.Views.TabStrip"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ListBox x:Name="List"
+             ItemsSource="{Binding Tabs}"
+             SelectedItem="{Binding ActiveTab, Mode=TwoWay}"
+             Background="Transparent"
+             BorderThickness="0"
+             Padding="0"
+             AllowDrop="True"
+             AutomationProperties.Name="Open documents"
+             ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+             ScrollViewer.VerticalScrollBarVisibility="Disabled"
+             SelectionChanged="OnSelectionChanged"
+             PreviewMouseWheel="OnMouseWheel"
+             PreviewMouseDown="OnPreviewMouseDown"
+             PreviewMouseMove="OnPreviewMouseMove"
+             MouseDoubleClick="OnMouseDoubleClick"
+             DragOver="OnDragOver"
+             Drop="OnDrop"
+             ContextMenuOpening="OnContextMenuOpening">
+        <ListBox.ContextMenu>
+            <ContextMenu />
+        </ListBox.ContextMenu>
+        <ListBox.ItemsPanel>
+            <ItemsPanelTemplate>
+                <StackPanel Orientation="Horizontal" />
+            </ItemsPanelTemplate>
+        </ListBox.ItemsPanel>
+        <ListBox.ItemContainerStyle>
+            <Style TargetType="ListBoxItem">
+                <Setter Property="AutomationProperties.Name" Value="{Binding Title}" />
+                <Setter Property="ToolTip" Value="{Binding ToolTip}" />
+                <Setter Property="Focusable" Value="False" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ListBoxItem">
+                            <Border x:Name="Bd" Margin="0,0,1,0" Padding="12,6,4,6"
+                                    Background="Transparent" BorderBrush="Transparent" BorderThickness="0,0,0,2"
+                                    CornerRadius="4,4,0,0">
+                                <ContentPresenter VerticalAlignment="Center" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="#14808080" />
+                                </Trigger>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="#26808080" />
+                                    <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ListBox.ItemContainerStyle>
+        <ListBox.ItemTemplate>
+            <DataTemplate>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Margin="0,0,6,0" VerticalAlignment="Center" FontFamily="{StaticResource IconFont}" FontSize="11"
+                               Text="&#xE718;" Visibility="{Binding IsPinned, Converter={StaticResource BoolToVisibility}}" />
+                    <TextBlock x:Name="TitleText" MaxWidth="240" VerticalAlignment="Center" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                    <Grid Width="22" Height="22" Margin="4,0,0,0">
+                        <TextBlock x:Name="Dot" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="11" Text="●" Visibility="Hidden" />
+                        <Button x:Name="CloseButton" Width="22" Height="22" MinWidth="0" MinHeight="0" Padding="0"
+                                Background="Transparent" BorderThickness="0" Focusable="False" Visibility="Hidden"
+                                FontFamily="{StaticResource IconFont}" FontSize="10" Content="&#xE711;"
+                                ToolTip="Close (Ctrl+W)" AutomationProperties.Name="Close tab" Click="OnCloseClick" />
+                    </Grid>
+                </StackPanel>
+                <DataTemplate.Triggers>
+                    <DataTrigger Binding="{Binding IsPreviewTab}" Value="True">
+                        <Setter TargetName="TitleText" Property="FontStyle" Value="Italic" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding IsDeletedOnDisk}" Value="True">
+                        <Setter TargetName="TitleText" Property="TextDecorations" Value="Strikethrough" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding IsDirty}" Value="True">
+                        <Setter TargetName="Dot" Property="Visibility" Value="Visible" />
+                    </DataTrigger>
+                    <MultiDataTrigger>
+                        <MultiDataTrigger.Conditions>
+                            <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" Value="True" />
+                            <Condition Binding="{Binding IsDirty}" Value="False" />
+                        </MultiDataTrigger.Conditions>
+                        <Setter TargetName="CloseButton" Property="Visibility" Value="Visible" />
+                    </MultiDataTrigger>
+                    <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" Value="True">
+                        <Setter TargetName="CloseButton" Property="Visibility" Value="Visible" />
+                        <Setter TargetName="Dot" Property="Visibility" Value="Hidden" />
+                    </DataTrigger>
+                </DataTemplate.Triggers>
+            </DataTemplate>
+        </ListBox.ItemTemplate>
+    </ListBox>
+</UserControl>

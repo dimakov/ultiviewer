@@ -18,13 +18,13 @@ public partial class App : Application
 
         var settings = AppSettings.Load();
         var session = SessionState.Load();
-        ApplyTheme(settings.Theme);
+        ThemeService.Instance.Apply(settings.Theme);
 
         _viewModel = new MainViewModel(settings, session, new DialogService(), new NotebookOperations(new RecycleBinDeleter()));
         var window = new MainWindow(_viewModel);
         MainWindow = window;
         window.Show();
-        _viewModel.Initialize();
+        _viewModel.Initialize(e.Args.Where(arg => !arg.StartsWith("--", StringComparison.Ordinal)));
     }
 
     protected override void OnExit(ExitEventArgs e)
@@ -32,14 +32,6 @@ public partial class App : Application
         _viewModel?.Dispose();
         base.OnExit(e);
     }
-
-    public void ApplyTheme(ThemePreference theme) =>
-        ThemeMode = theme switch
-        {
-            ThemePreference.Light => ThemeMode.Light,
-            ThemePreference.Dark => ThemeMode.Dark,
-            _ => ThemeMode.System,
-        };
 
     private static void OnUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {

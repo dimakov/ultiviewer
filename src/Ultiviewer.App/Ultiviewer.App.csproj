@@ -15,7 +15,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="AvalonEdit" />
     <PackageReference Include="CommunityToolkit.Mvvm" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Editor\Markdown.xshd" LogicalName="Ultiviewer.Markdown.xshd" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Markdown highlighting. Colors are for the light theme; HighlightingRegistry derives dark variants. -->
+<SyntaxDefinition name="Markdown" extensions=".md;.markdown;.mdown;.mkd;.mdx" xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008">
+  <Color name="Heading" foreground="#1F4E9E" fontWeight="bold" />
+  <Color name="Strong" fontWeight="bold" />
+  <Color name="Emphasis" fontStyle="italic" />
+  <Color name="Strike" foreground="#8A8A8A" />
+  <Color name="Code" foreground="#A3156B" />
+  <Color name="CodeBlock" foreground="#6B4E16" />
+  <Color name="Link" foreground="#0B66C2" />
+  <Color name="Url" foreground="#6A737D" />
+  <Color name="ListMarker" foreground="#B0306A" fontWeight="bold" />
+  <Color name="TaskOpen" foreground="#B0306A" fontWeight="bold" />
+  <Color name="TaskDone" foreground="#2E7D32" fontWeight="bold" />
+  <Color name="Quote" foreground="#5F6B7A" fontStyle="italic" />
+  <Color name="Tag" foreground="#7B1FA2" fontWeight="bold" />
+  <Color name="WikiLink" foreground="#0B66C2" fontWeight="bold" />
+  <Color name="Rule" foreground="#8A8A8A" />
+  <Color name="Html" foreground="#8A4B08" />
+  <Color name="Table" foreground="#8A8A8A" />
+
+  <RuleSet>
+    <Span color="CodeBlock" multiline="true">
+      <Begin>^[ ]{0,3}```.*$</Begin>
+      <End>^[ ]{0,3}```\s*$</End>
+    </Span>
+    <Span color="CodeBlock" multiline="true">
+      <Begin>^[ ]{0,3}~~~.*$</Begin>
+      <End>^[ ]{0,3}~~~\s*$</End>
+    </Span>
+
+    <Rule color="Heading">^[ ]{0,3}\#{1,6}([ \t].*)?$</Rule>
+    <Rule color="Heading">^[ ]{0,3}=+[ \t]*$</Rule>
+    <Rule color="Rule">^[ ]{0,3}([-*_][ \t]*){3,}$</Rule>
+    <Rule color="Quote">^[ ]{0,3}&gt;.*$</Rule>
+    <Rule color="TaskDone">^[ \t]*([-*+]|\d+[.)])[ \t]+\[[xX]\]</Rule>
+    <Rule color="TaskOpen">^[ \t]*([-*+]|\d+[.)])[ \t]+\[[ ]\]</Rule>
+    <Rule color="ListMarker">^[ \t]*([-*+]|\d+[.)])(?=[ \t])</Rule>
+
+    <Span color="Code">
+      <Begin>``</Begin>
+      <End>``</End>
+    </Span>
+    <Span color="Code">
+      <Begin>`</Begin>
+      <End>`</End>
+    </Span>
+
+    <Rule color="Strong">\*\*(?=\S).+?(?&lt;=\S)\*\*|__(?=\S).+?(?&lt;=\S)__</Rule>
+    <Rule color="Emphasis">(?&lt;![\*\w])\*(?=[^\s\*]).+?(?&lt;=\S)\*(?![\*\w])|(?&lt;![_\w])_(?=[^\s_]).+?(?&lt;=\S)_(?![_\w])</Rule>
+    <Rule color="Strike">~~(?=\S)(.+?)(?&lt;=\S)~~</Rule>
+    <Rule color="WikiLink">\[\[[^\[\]\r\n]+\]\]</Rule>
+    <Rule color="Link">!?\[[^\]\r\n]*\](?=[\(\[])</Rule>
+    <Rule color="Url">(?&lt;=\])\((?:[^()\s]|\([^()\s]*\))*(?:[ \t]+"[^"]*")?\)</Rule>
+    <Rule color="Url">^[ ]{0,3}\[[^\]\r\n]+\]:.*$</Rule>
+    <Rule color="Url">&lt;(?:https?|mailto|file):[^&gt;\s]+&gt;</Rule>
+    <Rule color="Url">\b(?:https?|ftp)://[^\s&lt;&gt;\)\]]+</Rule>
+    <Rule color="Tag">(?&lt;=^|[\s(])\#[\p{L}\p{N}_][\p{L}\p{N}_\-/]*</Rule>
+    <Rule color="Html">&lt;/?[A-Za-z][A-Za-z0-9-]*(?:\s[^&gt;\r\n]*)?/?&gt;</Rule>
+    <Rule color="Html">&lt;!--.*?--&gt;</Rule>
+    <Rule color="Table">\|</Rule>
+  </RuleSet>
+</SyntaxDefinition>

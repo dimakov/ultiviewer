@@ -1,0 +1,1044 @@
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.IO;
+using System.Text;
+using System.Windows;
+using System.Windows.Threading;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using Ultiviewer.App.Services;
+using Ultiviewer.Core.Files;
+using Ultiviewer.Core.Notebooks;
+using Ultiviewer.Core.Settings;
+using Ultiviewer.Core.Text;
+
+namespace Ultiviewer.App.ViewModels;
+
+/// <summary>
+/// Open documents: tabs, loading, saving (autosave for notebook pages, explicit for other files), unsaved-buffer
+/// backups, reacting to changes made on disk, and session restore.
+/// </summary>
+public sealed partial class MainViewModel
+{
+    private readonly BackupStore _backups = new(AppPaths.BackupDirectory);
+    private readonly Stack<string> _closedTabs = new();
+    private readonly Dictionary<DocumentTabViewModel, DispatcherTimer> _autosaveTimers = [];
+    private DispatcherTimer? _backupTimer;
+    private DispatcherTimer? _wordCountTimer;
+    private bool _syncingSelection;
+    private bool _checkingDisk;
+
+    public ObservableCollection<DocumentTabViewModel> Tabs { get; } = [];
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(WindowTitle))]
+    private DocumentTabViewModel? _activeTab;
+
+    [ObservableProperty]
+    private int _caretLine = 1;
+
+    [ObservableProperty]
+    private int _caretColumn = 1;
+
+    [ObservableProperty]
+    private int _selectionLength;
+
+    [ObservableProperty]
+    private int _wordCount;
+
+    public bool HasTabs => Tabs.Count > 0;
+
+    public string WindowTitle => ActiveTab is { } tab
+        ? $"{tab.Title}{(tab.IsDirty ? " •" : "")} — {Core.AppInfo.Name}"
+        : Core.AppInfo.Name;
+
+    public string SaveStatus => ActiveTab switch
+    {
+        null => "",
+        { SaveError: not null } => "Save failed",
+        { IsDeletedOnDisk: true } => "Deleted on disk",
+        { IsDirty: true } tab when AutosaveEligible(tab) => "Saving…",
+        { IsDirty: true } => "Unsaved",
+        _ => "Saved",
+    };
+
+    /// <summary>Asks the view to move keyboard focus into the editor.</summary>
+    public event Action? EditorFocusRequested;
+
+    /// <summary>Asks the view to move the caret of the active tab to a line (1-based).</summary>
+    public event Action<int>? GoToLineRequested;
+
+    /// <summary>Raised before/after a tab's text is replaced from disk, so the view can keep the caret.</summary>
+    public event Action<DocumentTabViewModel>? TabReloading;
+
+    public event Action<DocumentTabViewModel>? TabReloaded;
+
+    /// <summary>Asks the view to store the active editor's caret/scroll into its tab.</summary>
+    public event Action? CaptureEditorState;
+
+    private void InitializeDocuments(IEnumerable<string> startupFiles)
+    {
+        Tabs.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasTabs));
+        RestoreTabs();
+        foreach (var file in startupFiles)
+        {
+            OpenDocument(file, preview: false);
+        }
+
+        _backupTimer = new DispatcherTimer(TimeSpan.FromSeconds(5), DispatcherPriority.Background, (_, _) => WriteBackups(), _dispatcher);
+        _backupTimer.Start();
+        _wordCountTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(400), DispatcherPriority.Background, (_, _) =>
+        {
+            _wordCountTimer!.Stop();
+            UpdateWordCount();
+        }, _dispatcher);
+        _wordCountTimer.Stop();
+
+        // The tree realizes the restored selection asynchronously; that must not open a preview tab over the
+        // restored or command-line documents.
+        _syncingSelection = true;
+        _dispatcher.BeginInvoke(() => _syncingSelection = false, DispatcherPriority.ApplicationIdle);
+    }
+
+    partial void OnSelectedNodeChanged(TreeNodeViewModel? value)
+    {
+        if (!_syncingSelection && value is { Kind: NodeKind.Page or NodeKind.File, IsEditing: false })
+        {
+            OpenDocument(value.Path, preview: true, focus: false);
+        }
+    }
+
+    partial void OnActiveTabChanged(DocumentTabViewModel? oldValue, DocumentTabViewModel? newValue)
+    {
+        if (oldValue is not null)
+        {
+            oldValue.PropertyChanged -= OnActiveTabPropertyChanged;
+            if (Tabs.Contains(oldValue) && oldValue.IsDirty && AutosaveEligible(oldValue))
+            {
+                SaveTab(oldValue, interactive: false);
+            }
+        }
+
+        if (newValue is not null)
+        {
+            newValue.PropertyChanged += OnActiveTabPropertyChanged;
+            if (newValue.Path is not null && FindNode(newValue.Path) is { } node && !node.IsSelected)
+            {
+                _syncingSelection = true;
+                try
+                {
+                    SelectPath(newValue.Path);
+                }
+                finally
+                {
+                    _syncingSelection = false;
+                }
+            }
+        }
+
+        UpdateWordCount();
+        OnPropertyChanged(nameof(SaveStatus));
+    }
+
+    private void OnActiveTabPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(DocumentTabViewModel.IsDirty) or nameof(DocumentTabViewModel.Title))
+        {
+            OnPropertyChanged(nameof(WindowTitle));
+        }
+
+        OnPropertyChanged(nameof(SaveStatus));
+    }
+
+    // ---- Opening ----
+
+    /// <summary>Opens a file in a tab (or activates its tab). Preview tabs are replaced by the next preview.</summary>
+    public DocumentTabViewModel? OpenDocument(string path, bool preview = false, int? line = null, bool focus = true)
+    {
+        path = Path.GetFullPath(path);
+        if (Tabs.FirstOrDefault(t => t.IsAt(path)) is { } existing)
+        {
+            if (!preview)
+            {
+                existing.IsPreviewTab = false;
+            }
+
+            Activate(existing, line, focus);
+            return existing;
+        }
+
+        if (!File.Exists(path))
+        {
+            if (!preview)
+            {
+                _dialogs.ShowError($"\"{path}\" doesn't exist.");
+            }
+
+            return null;
+        }
+
+        try
+        {
+            switch (TextDocumentFile.Inspect(path))
+            {
+                case LoadProblem.Binary:
+                    if (preview)
+                    {
+                        StatusMessage = $"\"{Path.GetFileName(path)}\" isn't a text file. Press Enter to open it with its default app.";
+                    }
+                    else
+                    {
+                        ShellService.Open(path);
+                    }
+
+                    return null;
+                case LoadProblem.TooLarge:
+                    _dialogs.ShowError($"\"{Path.GetFileName(path)}\" is larger than {TextDocumentFile.MaxSize / (1024 * 1024)} MB and can't be opened.");
+                    return null;
+            }
+
+            if (new FileInfo(path).Length > TextDocumentFile.LargeSize
+                && !_dialogs.Confirm($"\"{Path.GetFileName(path)}\" is a large file. Open it anyway?"))
+            {
+                return null;
+            }
+
+            var loaded = TextDocumentFile.Load(path, Settings.DefaultLineEnding);
+            var tab = CreateTab(path, loaded);
+            tab.IsPreviewTab = preview;
+            tab.PendingLine = line;
+            AddTab(tab, replacePreview: preview);
+            Activate(tab, null, focus);
+            RememberRecent(path);
+            return tab;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            _dialogs.ShowError($"Couldn't open \"{Path.GetFileName(path)}\":\n{ex.Message}");
+            return null;
+        }
+    }
+
+    partial void RememberRecent(string path);
+
+    private DocumentTabViewModel CreateTab(string path, LoadedText loaded)
+    {
+        var tab = new DocumentTabViewModel(path, loaded.Text, loaded.Format)
+        {
+            KnownStamp = loaded.Stamp,
+            KnownHash = loaded.Hash,
+        };
+        UpdateNotebookPageFlag(tab);
+        tab.ViewMode = tab.IsMarkdown ? Settings.DefaultMarkdownViewMode : ViewMode.Edit;
+        return tab;
+    }
+
+    private void UpdateNotebookPageFlag(DocumentTabViewModel tab) =>
+        tab.IsNotebookPage = tab.Path is not null && NotebookScanner.IsPageFile(tab.Path) && NotebookOf(tab.Path) is not null;
+
+    private void AddTab(DocumentTabViewModel tab, bool replacePreview)
+    {
+        var index = ActiveTab is null ? Tabs.Count : Tabs.IndexOf(ActiveTab) + 1;
+        if (replacePreview && Tabs.FirstOrDefault(t => t.IsPreviewTab && !t.IsDirty && t != tab) is { } old)
+        {
+            index = Tabs.IndexOf(old);
+            Detach(old);
+            Tabs.RemoveAt(index);
+        }
+
+        Attach(tab);
+        Tabs.Insert(Math.Clamp(index, 0, Tabs.Count), tab);
+    }
+
+    private void Activate(DocumentTabViewModel tab, int? line, bool focus)
+    {
+        if (ActiveTab == tab)
+        {
+            if (line is { } target)
+            {
+                GoToLineRequested?.Invoke(target);
+            }
+        }
+        else
+        {
+            tab.PendingLine = line ?? tab.PendingLine;
+            ActiveTab = tab;
+        }
+
+        if (focus)
+        {
+            EditorFocusRequested?.Invoke();
+        }
+    }
+
+    public void FocusEditor() => EditorFocusRequested?.Invoke();
+
+    public void GoToLine(int line) => GoToLineRequested?.Invoke(line);
+
+    private void Attach(DocumentTabViewModel tab)
+    {
+        tab.Document.TextChanged += (_, _) => OnTabTextChanged(tab);
+        tab.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(DocumentTabViewModel.IsDirty) && tab.IsDirty)
+            {
+                tab.IsPreviewTab = false;
+            }
+        };
+    }
+
+    private void Detach(DocumentTabViewModel tab)
+    {
+        if (_autosaveTimers.Remove(tab, out var timer))
+        {
+            timer.Stop();
+        }
+    }
+
+    private void OnTabTextChanged(DocumentTabViewModel tab)
+    {
+        tab.IsPreviewTab = false;
+        if (AutosaveEligible(tab))
+        {
+            if (!_autosaveTimers.TryGetValue(tab, out var timer))
+            {
+                timer = new DispatcherTimer(DispatcherPriority.Background, _dispatcher);
+                timer.Tick += (_, _) =>
+                {
+                    timer.Stop();
+                    if (tab.IsDirty && Tabs.Contains(tab))
+                    {
+                        SaveTab(tab, interactive: false);
+                    }
+                };
+                _autosaveTimers[tab] = timer;
+            }
+
+            timer.Interval = TimeSpan.FromMilliseconds(Math.Max(200, Settings.AutosaveDelayMs));
+            timer.Stop();
+            timer.Start();
+        }
+
+        if (tab == ActiveTab)
+        {
+            _wordCountTimer?.Stop();
+            _wordCountTimer?.Start();
+            OnPropertyChanged(nameof(SaveStatus));
+        }
+
+        OnDocumentEdited(tab);
+    }
+
+    /// <summary>Called after every edit (preview refresh, etc.).</summary>
+    partial void OnDocumentEdited(DocumentTabViewModel tab);
+
+    /// <summary>Called after a document was written to disk (search index, etc.).</summary>
+    partial void OnDocumentSaved(DocumentTabViewModel tab);
+
+    private void UpdateWordCount() =>
+        WordCount = ActiveTab is { } tab ? TextStatistics.CountWords(tab.Document.Text) : 0;
+
+    public bool AutosaveEligible(DocumentTabViewModel tab) =>
+        !tab.IsUntitled && (tab.IsNotebookPage ? Settings.AutosaveNotebookPages : Settings.AutosaveExternalFiles);
+
+    // ---- Saving ----
+
+    /// <summary>Saves a tab. Untitled tabs ask for a file name. Returns false when nothing was saved.</summary>
+    public bool SaveTab(DocumentTabViewModel tab, bool interactive)
+    {
+        if (tab.Path is null)
+        {
+            return interactive && SaveTabAs(tab);
+        }
+
+        if (!interactive && ChangedOnDiskSinceLoad(tab))
+        {
+            // Never let autosave overwrite someone else's edit; ask first.
+            CheckDiskState(tab);
+            return false;
+        }
+
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(tab.Path)!);
+            var (stamp, hash) = TextDocumentFile.Save(tab.Path, tab.Document.Text, tab.Format);
+            tab.MarkSaved(stamp, hash);
+            DropBackup(tab);
+            if (interactive)
+            {
+                StatusMessage = $"Saved {tab.Title}";
+            }
+
+            OnPropertyChanged(nameof(SaveStatus));
+            OnDocumentSaved(tab);
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            tab.SaveError = ex.Message;
+            OnPropertyChanged(nameof(SaveStatus));
+            if (interactive)
+            {
+                _dialogs.ShowError($"Couldn't save \"{tab.Title}\":\n{ex.Message}");
+            }
+            else
+            {
+                StatusMessage = $"Couldn't save {tab.Title}: {ex.Message}";
+            }
+
+            return false;
+        }
+    }
+
+    public bool SaveTabAs(DocumentTabViewModel tab)
+    {
+        var suggested = tab.Path is null ? tab.UntitledName + (tab.IsMarkdown ? ".md" : ".txt") : Path.GetFileName(tab.Path);
+        var target = _dialogs.PickSaveFile("Save as", suggested, "Markdown|*.md|Text|*.txt|All files|*.*");
+        if (target is null)
+        {
+            return false;
+        }
+
+        var oldPath = tab.Path;
+        tab.Path = target;
+        tab.Language = Editor.HighlightingRegistry.Instance.LanguageForFile(target);
+        UpdateNotebookPageFlag(tab);
+        tab.KnownStamp = null;
+        tab.KnownHash = null;
+        if (!SaveTab(tab, interactive: true))
+        {
+            tab.Path = oldPath;
+            return false;
+        }
+
+        if (NotebookOf(target) is { } root)
+        {
+            RefreshNotebook(root);
+        }
+
+        return true;
+    }
+
+    [RelayCommand]
+    private void Save(DocumentTabViewModel? tab)
+    {
+        if ((tab ?? ActiveTab) is { } target)
+        {
+            SaveTab(target, interactive: true);
+        }
+    }
+
+    [RelayCommand]
+    private void SaveAs(DocumentTabViewModel? tab)
+    {
+        if ((tab ?? ActiveTab) is { } target)
+        {
+            SaveTabAs(target);
+        }
+    }
+
+    [RelayCommand]
+    private void SaveAll()
+    {
+        foreach (var tab in Tabs.Where(t => t.IsDirty).ToList())
+        {
+            SaveTab(tab, interactive: true);
+        }
+    }
+
+    // ---- Tab commands ----
+
+    [RelayCommand]
+    private void NewFile()
+    {
+        var used = Tabs.Where(t => t.IsUntitled).Select(t => t.UntitledName).ToHashSet();
+        var n = 1;
+        while (used.Contains($"new {n}"))
+        {
+            n++;
+        }
+
+        var tab = new DocumentTabViewModel(null, "", NewFileFormat(), $"new {n}")
+        {
+            ViewMode = Settings.DefaultMarkdownViewMode,
+        };
+        AddTab(tab, replacePreview: false);
+        Activate(tab, null, focus: true);
+    }
+
+    private TextFileFormat NewFileFormat() =>
+        new(TextFileFormat.Utf8, Settings.DefaultUtf8Bom, Settings.DefaultLineEnding);
+
+    [RelayCommand]
+    private void OpenFile()
+    {
+        if (_dialogs.PickFile("Open file", "All files|*.*|Markdown|*.md;*.markdown|Text|*.txt") is { } path)
+        {
+            OpenDocument(path, preview: false);
+        }
+    }
+
+    [RelayCommand]
+    private void Close(DocumentTabViewModel? tab)
+    {
+        if ((tab ?? ActiveTab) is { } target)
+        {
+            CloseTab(target);
+        }
+    }
+
+    /// <summary>Closes a tab, asking to save unsaved text that isn't autosaved. False if the user cancelled.</summary>
+    public bool CloseTab(DocumentTabViewModel tab)
+    {
+        if (tab == ActiveTab)
+        {
+            CaptureEditorState?.Invoke();
+        }
+
+        if (tab.IsDirty)
+        {
+            if (AutosaveEligible(tab) && !tab.IsDeletedOnDisk)
+            {
+                if (!SaveTab(tab, interactive: true))
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                var answer = _dialogs.AskYesNoCancel($"Save changes to \"{tab.Title}\"?");
+                if (answer is null || (answer == true && !SaveTab(tab, interactive: true)))
+                {
+                    return false;
+                }
+            }
+        }
+
+        DropBackup(tab);
+        Detach(tab);
+        if (tab.Path is not null)
+        {
+            _closedTabs.Push(tab.Path);
+        }
+
+        var index = Tabs.IndexOf(tab);
+        var wasActive = tab == ActiveTab;
+        Tabs.Remove(tab);
+        if (wasActive || ActiveTab is null)
+        {
+            ActiveTab = Tabs.Count == 0 ? null : Tabs[Math.Min(index, Tabs.Count - 1)];
+        }
+
+        return true;
+    }
+
+    [RelayCommand]
+    private void CloseOthers(DocumentTabViewModel? tab)
+    {
+        var keep = tab ?? ActiveTab;
+        foreach (var other in Tabs.Where(t => t != keep && !t.IsPinned).ToList())
+        {
+            if (!CloseTab(other))
+            {
+                break;
+            }
+        }
+    }
+
+    [RelayCommand]
+    private void CloseAll()
+    {
+        foreach (var tab in Tabs.Where(t => !t.IsPinned).ToList())
+        {
+            if (!CloseTab(tab))
+            {
+                break;
+            }
+        }
+    }
+
+    [RelayCommand]
+    private void CloseToRight(DocumentTabViewModel? tab)
+    {
+        if ((tab ?? ActiveTab) is not { } anchor)
+        {
+            return;
+        }
+
+        foreach (var other in Tabs.Skip(Tabs.IndexOf(anchor) + 1).Where(t => !t.IsPinned).ToList())
+        {
+            if (!CloseTab(other))
+            {
+                break;
+            }
+        }
+    }
+
+    [RelayCommand]
+    private void ReopenClosed()
+    {
+        while (_closedTabs.TryPop(out var path))
+        {
+            if (File.Exists(path))
+            {
+                OpenDocument(path, preview: false);
+                return;
+            }
+        }
+    }
+
+    [RelayCommand]
+    private void NextTab() => CycleTab(+1);
+
+    [RelayCommand]
+    private void PreviousTab() => CycleTab(-1);
+
+    private void CycleTab(int step)
+    {
+        if (Tabs.Count > 1 && ActiveTab is { } tab)
+        {
+            ActiveTab = Tabs[(Tabs.IndexOf(tab) + step + Tabs.Count) % Tabs.Count];
+            EditorFocusRequested?.Invoke();
+        }
+    }
+
+    [RelayCommand]
+    private void TogglePin(DocumentTabViewModel? tab)
+    {
+        if ((tab ?? ActiveTab) is not { } target)
+        {
+            return;
+        }
+
+        target.IsPinned = !target.IsPinned;
+        target.IsPreviewTab = false;
+        var pinnedCount = Tabs.Count(t => t.IsPinned && t != target);
+        var from = Tabs.IndexOf(target);
+        var to = target.IsPinned ? pinnedCount : Math.Max(pinnedCount, 0);
+        if (from != to)
+        {
+            Tabs.Move(from, Math.Min(to, Tabs.Count - 1));
+        }
+    }
+
+    [RelayCommand]
+    private void KeepTabOpen(DocumentTabViewModel? tab)
+    {
+        if ((tab ?? ActiveTab) is { } target)
+        {
+            target.IsPreviewTab = false;
+        }
+    }
+
+    [RelayCommand]
+    private void Reload(DocumentTabViewModel? tab)
+    {
+        if ((tab ?? ActiveTab) is not { Path: { } path } target || !File.Exists(path))
+        {
+            return;
+        }
+
+        if (target.IsDirty && !_dialogs.Confirm($"Reload \"{target.Title}\" from disk and lose your unsaved changes?", warning: true))
+        {
+            return;
+        }
+
+        ReloadTab(target, TextDocumentFile.Load(path, Settings.DefaultLineEnding));
+    }
+
+    [RelayCommand]
+    private void RevealTabInTree(DocumentTabViewModel? tab)
+    {
+        if ((tab ?? ActiveTab) is { Path: { } path })
+        {
+            if (SelectPath(path) is null)
+            {
+                ShellService.RevealInExplorer(path);
+            }
+        }
+    }
+
+    [RelayCommand]
+    private void CopyTabPath(DocumentTabViewModel? tab)
+    {
+        if ((tab ?? ActiveTab) is { Path: { } path })
+        {
+            Clipboard.SetText(path);
+            StatusMessage = "Path copied";
+        }
+    }
+
+    [RelayCommand]
+    private void OpenTabFolder(DocumentTabViewModel? tab)
+    {
+        if ((tab ?? ActiveTab) is { Path: { } path })
+        {
+            ShellService.RevealInExplorer(path);
+        }
+    }
+
+    public void MoveTab(DocumentTabViewModel tab, int newIndex)
+    {
+        var from = Tabs.IndexOf(tab);
+        if (from >= 0 && newIndex >= 0 && newIndex < Tabs.Count && from != newIndex)
+        {
+            Tabs.Move(from, newIndex);
+        }
+    }
+
+    // ---- Format changes (status bar) ----
+
+    public void SetLineEnding(DocumentTabViewModel tab, LineEnding lineEnding)
+    {
+        var text = tab.Document.Text;
+        var normalized = TextFileFormat.NormalizeLineEndings(text, lineEnding);
+        tab.Format = tab.Format with { LineEnding = lineEnding };
+        if (normalized != text)
+        {
+            tab.Document.Text = normalized;
+        }
+        else
+        {
+            tab.IsDirty = true;
+        }
+    }
+
+    public void SetEncoding(DocumentTabViewModel tab, Encoding encoding, bool bom)
+    {
+        tab.Format = tab.Format with { Encoding = encoding, HasBom = bom };
+        tab.IsDirty = true;
+        OnPropertyChanged(nameof(SaveStatus));
+        if (AutosaveEligible(tab))
+        {
+            SaveTab(tab, interactive: false);
+        }
+    }
+
+    /// <summary>Re-reads the file assuming a different encoding (the file isn't changed).</summary>
+    public void ReopenWithEncoding(DocumentTabViewModel tab, Encoding encoding)
+    {
+        if (tab.Path is not { } path || (tab.IsDirty && !_dialogs.Confirm("Discard unsaved changes and reopen with a different encoding?", warning: true)))
+        {
+            return;
+        }
+
+        var bytes = TextDocumentFile.ReadAllBytesShared(path);
+        var (_, bomLength) = TextFileFormat.DetectEncoding(bytes);
+        var text = encoding.GetString(bytes, bomLength, bytes.Length - bomLength);
+        var format = new TextFileFormat(encoding, bomLength > 0, TextFileFormat.DetectLineEnding(text) ?? tab.Format.LineEnding);
+        ReloadTab(tab, new LoadedText(text, format, FileStamp.Read(path) ?? default, TextDocumentFile.Hash(bytes)));
+    }
+
+    public void SetLanguage(DocumentTabViewModel tab, string language) => tab.Language = language;
+
+    // ---- Changes on disk ----
+
+    partial void OnFileChangedOnDisk(string path)
+    {
+        foreach (var tab in Tabs.Where(t => t.IsAt(path)).ToList())
+        {
+            CheckDiskState(tab);
+        }
+
+        OnNotebookFileChanged(path);
+    }
+
+    /// <summary>Called for every file change inside a notebook (search index, etc.).</summary>
+    partial void OnNotebookFileChanged(string path);
+
+    /// <summary>Re-checks every open file; called when the window is activated (like Notepad++).</summary>
+    public void CheckAllDiskStates()
+    {
+        foreach (var tab in Tabs.ToList())
+        {
+            CheckDiskState(tab);
+        }
+    }
+
+    private bool ChangedOnDiskSinceLoad(DocumentTabViewModel tab)
+    {
+        if (tab.Path is null || tab.KnownStamp is null)
+        {
+            return false;
+        }
+
+        var stamp = FileStamp.Read(tab.Path);
+        if (stamp is null || stamp == tab.KnownStamp)
+        {
+            return false;
+        }
+
+        try
+        {
+            return TextDocumentFile.HashFile(tab.Path) != tab.KnownHash;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+
+    private void CheckDiskState(DocumentTabViewModel tab)
+    {
+        if (tab.Path is null || _checkingDisk)
+        {
+            return;
+        }
+
+        var stamp = FileStamp.Read(tab.Path);
+        if (stamp is null)
+        {
+            if (!tab.IsDeletedOnDisk && !File.Exists(tab.Path))
+            {
+                tab.IsDeletedOnDisk = true;
+                StatusMessage = $"\"{tab.Title}\" was deleted or moved outside {Core.AppInfo.Name}. Save it to recreate the file.";
+                OnPropertyChanged(nameof(SaveStatus));
+            }
+
+            return;
+        }
+
+        tab.IsDeletedOnDisk = false;
+        if (stamp == tab.KnownStamp)
+        {
+            return;
+        }
+
+        LoadedText loaded;
+        try
+        {
+            loaded = TextDocumentFile.Load(tab.Path, Settings.DefaultLineEnding);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return; // Probably still being written; the next change event retries.
+        }
+
+        if (loaded.Hash == tab.KnownHash)
+        {
+            tab.KnownStamp = loaded.Stamp;
+            return;
+        }
+
+        if (!tab.IsDirty)
+        {
+            ReloadTab(tab, loaded);
+            StatusMessage = $"Reloaded \"{tab.Title}\" — it was changed by another program";
+            return;
+        }
+
+        _checkingDisk = true;
+        try
+        {
+            if (_dialogs.Confirm(
+                    $"\"{tab.Title}\" was changed by another program.\n\nReload it and lose the unsaved changes made here?\n\nCancel keeps your version; saving it will overwrite the other change.",
+                    warning: true))
+            {
+                ReloadTab(tab, loaded);
+            }
+            else
+            {
+                tab.KnownStamp = loaded.Stamp;
+                tab.KnownHash = loaded.Hash;
+            }
+        }
+        finally
+        {
+            _checkingDisk = false;
+        }
+    }
+
+    private void ReloadTab(DocumentTabViewModel tab, LoadedText loaded)
+    {
+        if (tab == ActiveTab)
+        {
+            TabReloading?.Invoke(tab);
+        }
+
+        tab.Reload(loaded);
+        DropBackup(tab);
+        if (tab == ActiveTab)
+        {
+            TabReloaded?.Invoke(tab);
+        }
+
+        OnPropertyChanged(nameof(SaveStatus));
+    }
+
+    partial void OnItemMoved(string oldPath, string newPath)
+    {
+        foreach (var tab in Tabs)
+        {
+            if (tab.Path is not { } path)
+            {
+                continue;
+            }
+
+            if (tab.IsAt(oldPath))
+            {
+                tab.Path = newPath;
+            }
+            else if (FileSystemMoves.IsSameOrInside(path, oldPath))
+            {
+                tab.Path = Path.Combine(newPath, Path.GetRelativePath(oldPath, path));
+            }
+            else
+            {
+                continue;
+            }
+
+            tab.KnownStamp = FileStamp.Read(tab.Path);
+            UpdateNotebookPageFlag(tab);
+        }
+
+        OnPropertyChanged(nameof(WindowTitle));
+    }
+
+    partial void OnItemDeleted(string path)
+    {
+        foreach (var tab in Tabs.Where(t => t.IsAt(path)).ToList())
+        {
+            if (tab.IsDirty)
+            {
+                tab.IsDeletedOnDisk = true;
+            }
+            else
+            {
+                DropBackup(tab);
+                Detach(tab);
+                var index = Tabs.IndexOf(tab);
+                var wasActive = tab == ActiveTab;
+                Tabs.Remove(tab);
+                if (wasActive)
+                {
+                    ActiveTab = Tabs.Count == 0 ? null : Tabs[Math.Min(index, Tabs.Count - 1)];
+                }
+            }
+        }
+    }
+
+    partial void OnNewPageReady(string path) => OpenDocument(path, preview: false, focus: true);
+
+    // ---- Backups and session ----
+
+    private void WriteBackups(bool force = false)
+    {
+        foreach (var tab in Tabs)
+        {
+            var autosaved = AutosaveEligible(tab) && !tab.IsDeletedOnDisk;
+            if (!tab.IsDirty || (autosaved && !force) || tab.Version == tab.BackupVersion)
+            {
+                continue;
+            }
+
+            tab.BackupName ??= BackupStore.NewName();
+            try
+            {
+                _backups.Write(tab.BackupName, tab.Document.Text);
+                tab.BackupVersion = tab.Version;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                ErrorLog.Write(ex, "Backup");
+            }
+        }
+    }
+
+    private void DropBackup(DocumentTabViewModel tab)
+    {
+        if (tab.BackupName is { } name)
+        {
+            _backups.Delete(name);
+            tab.BackupName = null;
+            tab.BackupVersion = -1;
+        }
+    }
+
+    /// <summary>
+    /// Called when the window closes: autosaves what is autosaved and snapshots everything else, so the next
+    /// start restores unsaved buffers instead of asking about them (Notepad++ behaviour).
+    /// </summary>
+    private void CaptureDocumentState()
+    {
+        CaptureEditorState?.Invoke();
+        foreach (var tab in Tabs.Where(t => t.IsDirty && AutosaveEligible(t) && !t.IsDeletedOnDisk).ToList())
+        {
+            SaveTab(tab, interactive: false);
+        }
+
+        WriteBackups(force: true);
+        Session.Tabs = Tabs.Select(t => new OpenTabState
+        {
+            Path = t.Path ?? "",
+            UntitledName = t.IsUntitled ? t.UntitledName : null,
+            Language = t.IsUntitled ? t.Language : null,
+            CaretOffset = t.CaretOffset,
+            VerticalOffset = t.VerticalOffset,
+            ViewMode = t.ViewMode,
+            Pinned = t.IsPinned,
+            BackupFile = t.IsDirty ? t.BackupName : null,
+            Bookmarks = t.Bookmarks.ToList(),
+        }).ToList();
+        Session.ActiveTab = ActiveTab is null ? -1 : Tabs.IndexOf(ActiveTab);
+        _backups.DeleteAllExcept(Session.Tabs.Select(t => t.BackupFile).OfType<string>());
+    }
+
+    private void RestoreTabs()
+    {
+        foreach (var state in Session.Tabs)
+        {
+            var backup = state.BackupFile is { } name ? _backups.Read(name) : null;
+            DocumentTabViewModel? tab = null;
+            try
+            {
+                if (string.IsNullOrEmpty(state.Path))
+                {
+                    if (backup is not null)
+                    {
+                        tab = new DocumentTabViewModel(null, "", NewFileFormat(), state.UntitledName ?? "new 1");
+                        if (state.Language is { } language)
+                        {
+                            tab.Language = language;
+                        }
+                    }
+                }
+                else if (File.Exists(state.Path) && TextDocumentFile.Inspect(state.Path) == LoadProblem.None)
+                {
+                    tab = CreateTab(state.Path, TextDocumentFile.Load(state.Path, Settings.DefaultLineEnding));
+                }
+                else if (backup is not null)
+                {
+                    tab = new DocumentTabViewModel(state.Path, "", NewFileFormat()) { IsDeletedOnDisk = true };
+                    UpdateNotebookPageFlag(tab);
+                }
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                ErrorLog.Write(ex, $"Restoring tab {state.Path}");
+            }
+
+            if (tab is null)
+            {
+                continue;
+            }
+
+            if (backup is not null)
+            {
+                tab.Document.Text = backup; // an undoable edit, so the tab shows as unsaved
+                tab.BackupName = state.BackupFile;
+                tab.BackupVersion = tab.Version;
+            }
+
+            tab.CaretOffset = Math.Min(state.CaretOffset, tab.Document.TextLength);
+            tab.SelectionStart = tab.CaretOffset;
+            tab.VerticalOffset = state.VerticalOffset;
+            tab.ViewMode = state.ViewMode ?? tab.ViewMode;
+            tab.IsPinned = state.Pinned;
+            tab.Bookmarks = state.Bookmarks.ToList();
+            Attach(tab);
+            Tabs.Add(tab);
+        }
+
+        ActiveTab = Session.ActiveTab >= 0 && Session.ActiveTab < Tabs.Count ? Tabs[Session.ActiveTab] : Tabs.LastOrDefault();
+    }
+}

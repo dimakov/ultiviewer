@@ -11,7 +11,12 @@ public sealed class WindowPlacement
 
 public sealed class OpenTabState
 {
+    /// <summary>File path; empty for an untitled buffer.</summary>
     public string Path { get; set; } = "";
+
+    public string? UntitledName { get; set; }
+
+    public string? Language { get; set; }
     public int CaretOffset { get; set; }
     public double VerticalOffset { get; set; }
     public ViewMode? ViewMode { get; set; }

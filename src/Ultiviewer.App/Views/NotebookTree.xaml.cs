@@ -436,7 +436,7 @@ public partial class NotebookTree : UserControl
         return element as T;
     }
 
-    private static T? FindDescendant<T>(DependencyObject root) where T : DependencyObject
+    internal static T? FindDescendant<T>(DependencyObject root) where T : DependencyObject
     {
         for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
         {
