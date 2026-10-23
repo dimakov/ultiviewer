@@ -268,6 +268,108 @@ public sealed partial class MainViewModel
         Session.RecentSearches = RecentSearches.ToList();
     }
 
+    // ---- Replace in the listed pages ----
+
+    [ObservableProperty]
+    private bool _isReplaceInFilesOpen;
+
+    [ObservableProperty]
+    private string _replaceFind = "";
+
+    [ObservableProperty]
+    private string _replaceWith = "";
+
+    [ObservableProperty]
+    private bool _replaceMatchCase;
+
+    [ObservableProperty]
+    private bool _replaceUseRegex;
+
+    partial void OnIsReplaceInFilesOpenChanged(bool value)
+    {
+        if (value && ReplaceFind.Length == 0)
+        {
+            ReplaceFind = SearchText.Trim().Trim('"');
+        }
+    }
+
+    /// <summary>
+    /// Replaces in every page listed in the results. Each changed page is opened in a tab and changed as one
+    /// undoable edit, so it can be reviewed and reverted with Ctrl+Z (notebook pages then autosave).
+    /// </summary>
+    [RelayCommand]
+    private void ReplaceInResults()
+    {
+        if (ReplaceFind.Length == 0 || SearchResults.Count == 0)
+        {
+            return;
+        }
+
+        var options = new Core.Text.FindOptions(ReplaceMatchCase, WholeWord: false, ReplaceUseRegex);
+        System.Text.RegularExpressions.Regex regex;
+        try
+        {
+            regex = Core.Text.TextSearcher.Build(ReplaceFind, options);
+        }
+        catch (ArgumentException ex)
+        {
+            _dialogs.ShowError($"The pattern is not a valid regular expression:\n{ex.Message}");
+            return;
+        }
+
+        var plan = new List<(string Path, int Count)>();
+        foreach (var page in SearchResults)
+        {
+            try
+            {
+                var text = Tabs.FirstOrDefault(t => t.IsAt(page.Path))?.Document.Text ?? Core.Files.TextDocumentFile.Load(page.Path).Text;
+                var count = Core.Text.TextSearcher.FindAll(text, regex).Count;
+                if (count > 0)
+                {
+                    plan.Add((page.Path, count));
+                }
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                ErrorLog.Write(ex, $"Replace preview for {page.Path}");
+            }
+        }
+
+        if (plan.Count == 0)
+        {
+            _dialogs.ShowInfo($"\"{ReplaceFind}\" doesn't occur in the listed pages.");
+            return;
+        }
+
+        var total = plan.Sum(p => p.Count);
+        var details = string.Join("\n", plan.Take(12).Select(p => $"  {TitleOf(p.Path)} — {p.Count}")) + (plan.Count > 12 ? $"\n  … and {plan.Count - 12} more" : "");
+        if (!_dialogs.Confirm(
+                $"Replace {total} occurrence{(total == 1 ? "" : "s")} of \"{ReplaceFind}\" with \"{ReplaceWith}\" in {plan.Count} page{(plan.Count == 1 ? "" : "s")}?\n\n{details}\n\n"
+                + "Each page opens in a tab; press Ctrl+Z there to undo its change."))
+        {
+            return;
+        }
+
+        var replaced = 0;
+        foreach (var (path, _) in plan)
+        {
+            if (OpenDocument(path, preview: false, focus: false) is not { } tab)
+            {
+                continue;
+            }
+
+            var (text, count) = Core.Text.TextSearcher.ReplaceAll(tab.Document.Text, regex, ReplaceWith, options);
+            if (count > 0)
+            {
+                tab.Document.Replace(0, tab.Document.TextLength, text);
+                replaced += count;
+            }
+        }
+
+        StatusMessage = $"Replaced {replaced} occurrence{(replaced == 1 ? "" : "s")} in {plan.Count} page{(plan.Count == 1 ? "" : "s")}";
+        RunSearch();
+    }
+
     /// <summary>Opens a result line and selects its first match.</summary>
     public void OpenSearchLine(SearchLineViewModel line, bool focusEditor)
     {

@@ -983,7 +983,7 @@ public sealed partial class MainViewModel
             ViewMode = t.ViewMode,
             Pinned = t.IsPinned,
             BackupFile = t.IsDirty ? t.BackupName : null,
-            Bookmarks = t.Bookmarks.ToList(),
+            Bookmarks = t.BookmarkLines().ToList(),
         }).ToList();
         Session.ActiveTab = ActiveTab is null ? -1 : Tabs.IndexOf(ActiveTab);
         _backups.DeleteAllExcept(Session.Tabs.Select(t => t.BackupFile).OfType<string>());
@@ -1040,7 +1040,7 @@ public sealed partial class MainViewModel
             tab.VerticalOffset = state.VerticalOffset;
             tab.ViewMode = state.ViewMode ?? tab.ViewMode;
             tab.IsPinned = state.Pinned;
-            tab.Bookmarks = state.Bookmarks.ToList();
+            tab.SetBookmarks(state.Bookmarks);
             Attach(tab);
             Tabs.Add(tab);
         }

@@ -118,7 +118,41 @@ public sealed partial class DocumentTabViewModel : ObservableObject
     /// <summary>Line to scroll to when the tab is next shown in the editor (1-based).</summary>
     public int? PendingLine { get; set; }
 
-    public List<int> Bookmarks { get; set; } = [];
+    private readonly List<TextAnchor> _bookmarks = [];
+
+    /// <summary>Bookmarked lines (1-based); anchors keep them on their line while text is edited.</summary>
+    public IReadOnlyList<int> BookmarkLines() =>
+        _bookmarks.Where(a => !a.IsDeleted).Select(a => a.Line).Distinct().Order().ToList();
+
+    public void ToggleBookmark(int line)
+    {
+        _bookmarks.RemoveAll(a => a.IsDeleted);
+        var existing = _bookmarks.FindAll(a => a.Line == line);
+        if (existing.Count > 0)
+        {
+            _bookmarks.RemoveAll(existing.Contains);
+            return;
+        }
+
+        if (line >= 1 && line <= Document.LineCount)
+        {
+            var anchor = Document.CreateAnchor(Document.GetLineByNumber(line).Offset);
+            anchor.MovementType = AnchorMovementType.BeforeInsertion;
+            anchor.SurviveDeletion = true;
+            _bookmarks.Add(anchor);
+        }
+    }
+
+    public void SetBookmarks(IEnumerable<int> lines)
+    {
+        _bookmarks.Clear();
+        foreach (var line in lines.Distinct())
+        {
+            ToggleBookmark(line);
+        }
+    }
+
+    public void ClearBookmarks() => _bookmarks.Clear();
 
     public void MarkSaved(FileStamp stamp, string hash)
     {

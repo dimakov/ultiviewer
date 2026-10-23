@@ -40,6 +40,7 @@ public partial class EditorHost : UserControl
         Editor.AddHandler(Hyperlink.RequestNavigateEvent, new System.Windows.Navigation.RequestNavigateEventHandler(OnRequestNavigate));
         Editor.ContextMenu = BuildContextMenu();
         InitializePreview();
+        InitializeCommands();
         SplitterMoved += SavePreviewRatio;
     }
 

@@ -18,7 +18,7 @@ if /i "%TARGET%"=="run" goto run
 
 dotnet build Ultiviewer.slnx -c Debug -v minimal -nologo || exit /b 1
 if /i "%TARGET%"=="build" exit /b 0
-dotnet test tests\Ultiviewer.Core.Tests\Ultiviewer.Core.Tests.csproj -c Debug --no-build -nologo || exit /b 1
+dotnet test tests\Ultiviewer.Core.Tests\Ultiviewer.Core.Tests.csproj -c Debug --no-build -nologo --blame-hang-timeout 2m || exit /b 1
 exit /b 0
 
 :run

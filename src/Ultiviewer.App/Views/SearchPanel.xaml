@@ -6,6 +6,7 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
@@ -16,6 +17,10 @@
                     ToolTip="Close search (Esc)" AutomationProperties.Name="Close search" Command="{Binding CloseSearchCommand}" />
             <TextBlock DockPanel.Dock="Right" MinWidth="170" Margin="10,0,6,0" VerticalAlignment="Center" Opacity="0.75"
                        Text="{Binding SearchStatus}" TextTrimming="CharacterEllipsis" />
+            <ToggleButton DockPanel.Dock="Right" Width="32" Height="30" MinWidth="0" MinHeight="0" Padding="0" Margin="4,0,0,0"
+                          Focusable="False" FontFamily="{StaticResource IconFont}" Content="&#xE8AB;"
+                          ToolTip="Replace in the listed pages" AutomationProperties.Name="Replace in files"
+                          IsChecked="{Binding IsReplaceInFilesOpen}" />
             <ComboBox DockPanel.Dock="Right" Width="150" Margin="6,0,0,0" ItemsSource="{Binding SearchScopes}"
                       SelectedItem="{Binding SearchScope}" AutomationProperties.Name="Search scope" />
             <TextBlock DockPanel.Dock="Left" Margin="0,0,8,0" VerticalAlignment="Center" FontFamily="{StaticResource IconFont}" Text="&#xE721;" />
@@ -27,7 +32,22 @@
                       PreviewKeyDown="OnQueryKeyDown" />
         </DockPanel>
 
-        <TreeView x:Name="Results" Grid.Row="1" Margin="4,0,4,4" BorderThickness="0" Background="Transparent"
+        <DockPanel Grid.Row="1" Margin="34,0,4,6" LastChildFill="False"
+                   Visibility="{Binding IsReplaceInFilesOpen, Converter={StaticResource BoolToVisibility}}">
+            <TextBox Width="200" Margin="0,0,6,0" Text="{Binding ReplaceFind, UpdateSourceTrigger=PropertyChanged}"
+                     AutomationProperties.Name="Text to replace" ToolTip="Text (or regular expression) to replace" />
+            <TextBlock Margin="0,0,6,0" VerticalAlignment="Center" Text="→" />
+            <TextBox Width="200" Margin="0,0,6,0" Text="{Binding ReplaceWith, UpdateSourceTrigger=PropertyChanged}"
+                     AutomationProperties.Name="Replacement" ToolTip="Replacement ($1, $2… refer to regex groups)" />
+            <ToggleButton Width="32" Height="30" MinWidth="0" MinHeight="0" Padding="0" Margin="2,0" Focusable="False" Content="Aa"
+                          ToolTip="Match case" IsChecked="{Binding ReplaceMatchCase}" />
+            <ToggleButton Width="32" Height="30" MinWidth="0" MinHeight="0" Padding="0" Margin="2,0" Focusable="False" Content=".*"
+                          ToolTip="Regular expression" IsChecked="{Binding ReplaceUseRegex}" />
+            <Button Margin="6,0,0,0" Height="30" MinHeight="0" Padding="10,0" Content="Replace in listed pages…"
+                    Command="{Binding ReplaceInResultsCommand}" />
+        </DockPanel>
+
+        <TreeView x:Name="Results" Grid.Row="2" Margin="4,0,4,4" BorderThickness="0" Background="Transparent"
                   ItemsSource="{Binding SearchResults}" AutomationProperties.Name="Search results"
                   VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
                   KeyDown="OnResultsKeyDown" PreviewMouseLeftButtonUp="OnResultsMouseUp">
