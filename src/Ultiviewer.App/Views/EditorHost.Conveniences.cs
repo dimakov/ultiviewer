@@ -203,6 +203,12 @@ public partial class EditorHost
 
     private void OnTextAreaPreviewKeyDown(object sender, KeyEventArgs e)
     {
+        if (e.Key == Key.Tab && _completion is null && _current is { IsMarkdown: true } && HandleListIndent(e))
+        {
+            e.Handled = true;
+            return;
+        }
+
         if (e.Key != Key.Enter || Keyboard.Modifiers != ModifierKeys.None || _completion is not null
             || _current is not { IsMarkdown: true } || Editor.SelectionLength > 0)
         {

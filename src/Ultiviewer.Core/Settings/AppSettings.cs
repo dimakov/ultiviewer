@@ -43,6 +43,9 @@ public sealed class AppSettings
 
     public bool HighlightCurrentLine { get; set; } = true;
 
+    /// <summary>The "Basic Text" formatting toolbar above Markdown documents.</summary>
+    public bool ShowFormatBar { get; set; } = true;
+
     /// <summary>Notebook pages save themselves this long after the last edit.</summary>
     public int AutosaveDelayMs { get; set; } = 1000;
 

@@ -5,6 +5,7 @@
   <Color name="Strong" fontWeight="bold" />
   <Color name="Emphasis" fontStyle="italic" />
   <Color name="Strike" foreground="#8A8A8A" />
+  <Color name="Mark" background="#FFF0A0" />
   <Color name="Code" foreground="#A3156B" />
   <Color name="CodeBlock" foreground="#6B4E16" />
   <Color name="Link" foreground="#0B66C2" />
@@ -49,6 +50,7 @@
     <Rule color="Strong">\*\*(?=\S).+?(?&lt;=\S)\*\*|__(?=\S).+?(?&lt;=\S)__</Rule>
     <Rule color="Emphasis">(?&lt;![\*\w])\*(?=[^\s\*]).+?(?&lt;=\S)\*(?![\*\w])|(?&lt;![_\w])_(?=[^\s_]).+?(?&lt;=\S)_(?![_\w])</Rule>
     <Rule color="Strike">~~(?=\S)(.+?)(?&lt;=\S)~~</Rule>
+    <Rule color="Mark">==(?=\S).+?(?&lt;=\S)==</Rule>
     <Rule color="WikiLink">\[\[[^\[\]\r\n]+\]\]</Rule>
     <Rule color="Link">!?\[[^\]\r\n]*\](?=[\(\[])</Rule>
     <Rule color="Url">(?&lt;=\])\((?:[^()\s]|\([^()\s]*\))*(?:[ \t]+"[^"]*")?\)</Rule>

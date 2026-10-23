@@ -45,6 +45,7 @@
                 <CheckBox Margin="0,6,0,0" Content="Line numbers" IsChecked="{Binding ShowLineNumbers}" />
                 <CheckBox Margin="0,6,0,0" Content="Show whitespace and line endings" IsChecked="{Binding ShowWhitespace}" />
                 <CheckBox Margin="0,6,0,0" Content="Highlight the current line" IsChecked="{Binding HighlightCurrentLine}" />
+                <CheckBox Margin="0,6,0,0" Content="Show the formatting toolbar (bold, headings, lists…) for notes" IsChecked="{Binding ShowFormatBar}" />
 
                 <TextBlock Style="{StaticResource Section}" Text="Saving" />
                 <CheckBox Content="Save notebook pages automatically (like OneNote)" IsChecked="{Binding AutosaveNotebookPages}" />

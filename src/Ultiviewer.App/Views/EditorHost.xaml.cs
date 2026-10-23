@@ -42,6 +42,7 @@ public partial class EditorHost : UserControl
         InitializePreview();
         InitializeCommands();
         InitializeConveniences();
+        InitializeFormatting();
         SplitterMoved += SavePreviewRatio;
     }
 
@@ -149,10 +150,12 @@ public partial class EditorHost : UserControl
         {
             ApplyHighlighting();
             ApplyViewMode();
+            UpdateFormatBar();
         }
         else if (e.PropertyName is nameof(DocumentTabViewModel.ViewMode) or nameof(DocumentTabViewModel.Path))
         {
             ApplyViewMode();
+            UpdateFormatBar();
         }
     }
 
@@ -287,6 +290,7 @@ public partial class EditorHost : UserControl
         options.ShowTabs = settings.ShowWhitespace;
         options.ShowEndOfLine = settings.ShowWhitespace;
         options.HighlightCurrentLine = settings.HighlightCurrentLine;
+        UpdateFormatBar();
     }
 
     private void ApplyPalette()

@@ -11,7 +11,7 @@
 | Duplicate / delete / move lines | Ctrl+D, Ctrl+Shift+L, Ctrl+Shift+↑/↓ | Work on all lines touched by the selection. |
 | Join lines | Ctrl+J | |
 | Sort ↑/↓, remove duplicates, remove empty lines, trim trailing whitespace | Edit → Line operations | Selected lines, or the whole document when nothing is selected. |
-| UPPER / lower / Title case | Ctrl+Shift+U, Ctrl+U, menu | Selection, or the word at the caret. |
+| UPPER / lower / Title case | Ctrl+Shift+U, Ctrl+U, menu | Selection, or the word at the caret. In Markdown documents Ctrl+U underlines instead (see `formatting.md`); lowercase stays in the menu. |
 | Bookmarks | Ctrl+F2 toggle, F2 / Shift+F2 next/previous, click the margin | Anchored to text, saved in the session. |
 | Smart highlighting | select a word | Other occurrences of the selected whole word get a subtle background. |
 | To-do | Ctrl+1 | Cycles plain → `- [ ]` → `- [x]` → plain list item on every selected line (OneNote's To Do tag). |
@@ -34,7 +34,7 @@
 
 ## Key decisions
 
-- **Shortcut dispatch happens in `EditorHost.PreviewKeyDown`.** AvalonEdit's text area marks arrow keys handled before ancestor input bindings run, and binds Ctrl+D to its own "delete line" through `AvalonEditCommands.DeleteLine.InputGestures`. We remove conflicting gestures from AvalonEdit's input handlers and commands, and run ours on the tunnelling event. In the find bar only find/replace/go-to shortcuts apply, so Ctrl+U etc. still edit the text box normally.
+- **Shortcut dispatch happens in `EditorHost.PreviewKeyDown`.** AvalonEdit's text area marks arrow keys handled before ancestor input bindings run, and binds Ctrl+D to its own "delete line" through `AvalonEditCommands.DeleteLine.InputGestures`. We remove conflicting gestures from AvalonEdit's input handlers and commands, and run ours on the tunnelling event. In the find bar only find/replace/go-to shortcuts apply, so Ctrl+U etc. still edit the text box normally. Markdown-only formatting commands are tried first and only run in Markdown documents, and Ctrl+Alt gestures are skipped while AltGr is down (details in `formatting.md`).
 - **Every multi-step edit is one undo step** (`TextDocument.RunUpdate()`), so Ctrl+Z reverts a whole "replace all", "move line" or Ctrl+1 on many lines.
 - **Replace in files never writes files directly**: changes go through open tabs (undoable), and the normal save path (autosave for notebook pages, Ctrl+S otherwise) persists them.
 

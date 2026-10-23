@@ -67,7 +67,8 @@ public partial class EditorHost
     }
 
     private void Bind(RoutedUICommand command, ExecutedRoutedEventHandler execute) =>
-        CommandBindings.Add(new CommandBinding(command, execute, (_, e) => e.CanExecute = _current is not null && Editor.IsVisible));
+        CommandBindings.Add(new CommandBinding(command, execute, (_, e) => e.CanExecute =
+            _current is not null && Editor.IsVisible && (_current.IsMarkdown || !EditorCommands.MarkdownOnly.Contains(command))));
 
     /// <summary>
     /// Our shortcuts run before the text area sees the key (it swallows arrow keys, and AvalonEdit maps
@@ -81,7 +82,9 @@ public partial class EditorHost
         }
 
         var inEditor = e.OriginalSource is DependencyObject source && (ReferenceEquals(source, Editor.TextArea) || IsInside(source, Editor));
-        foreach (var command in EditorCommands.WithGestures)
+        // AltGr arrives as Ctrl+Alt; it types characters (₪, €…), so it never triggers Ctrl+Alt shortcuts.
+        var altGr = Keyboard.IsKeyDown(Key.RightAlt);
+        foreach (var command in EditorCommands.WithGestures.OrderBy(c => EditorCommands.MarkdownOnly.Contains(c) ? 0 : 1))
         {
             if (!inEditor && !FindBarCommands.Contains(command))
             {
@@ -90,6 +93,11 @@ public partial class EditorHost
 
             foreach (KeyGesture gesture in command.InputGestures)
             {
+                if (altGr && gesture.Modifiers.HasFlag(ModifierKeys.Control | ModifierKeys.Alt))
+                {
+                    continue;
+                }
+
                 if (gesture.Matches(null, e) && command.CanExecute(null, Editor.TextArea))
                 {
                     command.Execute(null, Editor.TextArea);

@@ -1,0 +1,81 @@
+<UserControl x:Class="Ultiviewer.App.Views.FormatBar"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:editor="clr-namespace:Ultiviewer.App.Editor">
+    <UserControl.Resources>
+        <Style x:Key="FormatButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="MinWidth" Value="30" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Height" Value="28" />
+            <Setter Property="Padding" Value="6,0" />
+            <Setter Property="Margin" Value="1,0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="ToolTip" Value="{Binding Command.Text, RelativeSource={RelativeSource Self}}" />
+        </Style>
+        <Style x:Key="Divider" TargetType="Border">
+            <Setter Property="Width" Value="1" />
+            <Setter Property="Margin" Value="6,4" />
+            <Setter Property="Background" Value="#40808080" />
+        </Style>
+    </UserControl.Resources>
+    <Border Padding="6,3" BorderThickness="0,0,0,1" BorderBrush="#30808080">
+        <WrapPanel x:Name="Panel" Orientation="Horizontal" AutomationProperties.Name="Basic text formatting">
+            <ComboBox x:Name="StyleBox" Width="130" Height="28" MinHeight="0" Padding="8,2" Margin="0,0,4,0" Focusable="False"
+                      AutomationProperties.Name="Paragraph style" ToolTip="Paragraph style (Ctrl+Alt+0…6)"
+                      SelectionChanged="OnStyleChanged">
+                <ComboBoxItem Content="Normal text" />
+                <ComboBoxItem Content="Heading 1" FontSize="18" FontWeight="SemiBold" />
+                <ComboBoxItem Content="Heading 2" FontSize="16" FontWeight="SemiBold" />
+                <ComboBoxItem Content="Heading 3" FontSize="15" FontWeight="SemiBold" />
+                <ComboBoxItem Content="Heading 4" FontWeight="SemiBold" />
+                <ComboBoxItem Content="Heading 5" FontWeight="SemiBold" />
+                <ComboBoxItem Content="Heading 6" FontWeight="SemiBold" Opacity="0.75" />
+            </ComboBox>
+            <Border Style="{StaticResource Divider}" />
+            <Button Style="{StaticResource FormatButton}" Command="editor:EditorCommands.Bold" AutomationProperties.Name="Bold" Content="B" FontWeight="Bold" ToolTip="Bold (Ctrl+B)" />
+            <Button Style="{StaticResource FormatButton}" Command="editor:EditorCommands.Italic" AutomationProperties.Name="Italic" ToolTip="Italic (Ctrl+I)">
+                <TextBlock Text="I" FontStyle="Italic" FontFamily="Georgia" />
+            </Button>
+            <Button Style="{StaticResource FormatButton}" Command="editor:EditorCommands.Underline" AutomationProperties.Name="Underline" ToolTip="Underline (Ctrl+U)">
+                <TextBlock Text="U" TextDecorations="Underline" />
+            </Button>
+            <Button Style="{StaticResource FormatButton}" Command="editor:EditorCommands.Strikethrough" AutomationProperties.Name="Strikethrough" ToolTip="Strikethrough (Ctrl+-)">
+                <TextBlock Text="ab" TextDecorations="Strikethrough" />
+            </Button>
+            <Button Style="{StaticResource FormatButton}" Command="editor:EditorCommands.Subscript" AutomationProperties.Name="Subscript" Content="x₂" ToolTip="Subscript" />
+            <Button Style="{StaticResource FormatButton}" Command="editor:EditorCommands.Superscript" AutomationProperties.Name="Superscript" Content="x²" ToolTip="Superscript" />
+            <Button Style="{StaticResource FormatButton}" Command="editor:EditorCommands.Highlight" AutomationProperties.Name="Highlight" ToolTip="Highlight (Ctrl+Alt+H)">
+                <Border Background="#FFE066" CornerRadius="2" Padding="3,0">
+                    <TextBlock Text="ab" Foreground="Black" />
+                </Border>
+            </Button>
+            <Button x:Name="ColorButton" Style="{StaticResource FormatButton}" AutomationProperties.Name="Font color" ToolTip="Font color" Click="OnColorClick">
+                <StackPanel>
+                    <TextBlock Text="A" HorizontalAlignment="Center" FontWeight="SemiBold" />
+                    <Border x:Name="ColorSwatch" Height="3" Width="14" Background="#D64545" />
+                </StackPanel>
+            </Button>
+            <Button Style="{StaticResource FormatButton}" Command="editor:EditorCommands.InlineCode" AutomationProperties.Name="Inline code" Content="&lt;/&gt;" FontFamily="Consolas" ToolTip="Inline code (Ctrl+`)" />
+            <Button Style="{StaticResource FormatButton}" Command="editor:EditorCommands.ClearFormatting" AutomationProperties.Name="Clear formatting"
+                    FontFamily="{StaticResource IconFont}" Content="&#xE894;" ToolTip="Clear formatting (Ctrl+Space)" />
+            <Border Style="{StaticResource Divider}" />
+            <Button Style="{StaticResource FormatButton}" Command="editor:EditorCommands.BulletList" AutomationProperties.Name="Bulleted list"
+                    FontFamily="{StaticResource IconFont}" Content="&#xE8FD;" ToolTip="Bulleted list (Ctrl+.)" />
+            <Button Style="{StaticResource FormatButton}" Command="editor:EditorCommands.NumberedList" AutomationProperties.Name="Numbered list" Content="1." ToolTip="Numbered list (Ctrl+/)" />
+            <Button Style="{StaticResource FormatButton}" Command="editor:EditorCommands.ToggleTask" AutomationProperties.Name="To-do"
+                    FontFamily="{StaticResource IconFont}" Content="&#xE73A;" ToolTip="To-do (Ctrl+1)" />
+            <Button Style="{StaticResource FormatButton}" Command="editor:EditorCommands.Quote" AutomationProperties.Name="Quote" Content="❝" ToolTip="Quote" />
+            <Border Style="{StaticResource Divider}" />
+            <Button Style="{StaticResource FormatButton}" Command="editor:EditorCommands.InsertLink" AutomationProperties.Name="Link"
+                    FontFamily="{StaticResource IconFont}" Content="&#xE71B;" ToolTip="Link (Ctrl+K)" />
+            <Button Style="{StaticResource FormatButton}" Command="editor:EditorCommands.InsertTable" AutomationProperties.Name="Table" Content="Table" ToolTip="Insert a table" />
+            <Button Style="{StaticResource FormatButton}" Command="editor:EditorCommands.CodeBlock" AutomationProperties.Name="Code block" Content="{}{ }" FontFamily="Consolas" ToolTip="Code block" />
+            <Button Style="{StaticResource FormatButton}" Command="editor:EditorCommands.HorizontalRule" AutomationProperties.Name="Horizontal line" Content="—" ToolTip="Horizontal line" />
+            <Button Style="{StaticResource FormatButton}" Command="editor:EditorCommands.InsertDate" AutomationProperties.Name="Insert date"
+                    FontFamily="{StaticResource IconFont}" Content="&#xE787;" ToolTip="Insert date (Alt+Shift+D)" />
+        </WrapPanel>
+    </Border>
+</UserControl>

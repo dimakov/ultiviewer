@@ -37,6 +37,12 @@ public sealed partial class MainViewModel
         set => SetEditorSetting(Settings.HighlightCurrentLine, value, v => Settings.HighlightCurrentLine = v);
     }
 
+    public bool ShowFormatBar
+    {
+        get => Settings.ShowFormatBar;
+        set => SetEditorSetting(Settings.ShowFormatBar, value, v => Settings.ShowFormatBar = v);
+    }
+
     public int ZoomPercent => (int)Math.Round(Settings.EditorFontSize / 14.0 * 100);
 
     public bool IsThemeSystem => Settings.Theme == ThemePreference.System;
@@ -99,7 +105,7 @@ public sealed partial class MainViewModel
     /// <summary>Re-reads all settings after the settings window saved them.</summary>
     public void ReloadSettingsIntoView()
     {
-        foreach (var name in new[] { nameof(WordWrap), nameof(ShowLineNumbers), nameof(ShowWhitespace), nameof(HighlightCurrentLine), nameof(ZoomPercent), nameof(IsThemeSystem), nameof(IsThemeLight), nameof(IsThemeDark) })
+        foreach (var name in new[] { nameof(WordWrap), nameof(ShowLineNumbers), nameof(ShowWhitespace), nameof(HighlightCurrentLine), nameof(ShowFormatBar), nameof(ZoomPercent), nameof(IsThemeSystem), nameof(IsThemeLight), nameof(IsThemeDark) })
         {
             OnPropertyChanged(name);
         }

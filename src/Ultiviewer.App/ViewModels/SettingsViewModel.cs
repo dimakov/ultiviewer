@@ -18,6 +18,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         _showLineNumbers = settings.ShowLineNumbers;
         _showWhitespace = settings.ShowWhitespace;
         _highlightCurrentLine = settings.HighlightCurrentLine;
+        _showFormatBar = settings.ShowFormatBar;
         _autosaveNotebookPages = settings.AutosaveNotebookPages;
         _autosaveExternalFiles = settings.AutosaveExternalFiles;
         _autosaveDelayMs = settings.AutosaveDelayMs;
@@ -65,6 +66,9 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _highlightCurrentLine;
+
+    [ObservableProperty]
+    private bool _showFormatBar;
 
     [ObservableProperty]
     private bool _autosaveNotebookPages;
@@ -119,6 +123,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         settings.ShowLineNumbers = ShowLineNumbers;
         settings.ShowWhitespace = ShowWhitespace;
         settings.HighlightCurrentLine = HighlightCurrentLine;
+        settings.ShowFormatBar = ShowFormatBar;
         settings.AutosaveNotebookPages = AutosaveNotebookPages;
         settings.AutosaveExternalFiles = AutosaveExternalFiles;
         settings.AutosaveDelayMs = Math.Clamp(AutosaveDelayMs, 200, 60000);

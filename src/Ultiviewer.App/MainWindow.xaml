@@ -91,6 +91,35 @@
                     <MenuItem Command="editor:EditorCommands.ClearBookmarks" />
                 </MenuItem>
             </MenuItem>
+            <MenuItem Header="F_ormat">
+                <MenuItem Command="editor:EditorCommands.Bold" />
+                <MenuItem Command="editor:EditorCommands.Italic" />
+                <MenuItem Command="editor:EditorCommands.Underline" />
+                <MenuItem Command="editor:EditorCommands.Strikethrough" />
+                <MenuItem Command="editor:EditorCommands.Subscript" />
+                <MenuItem Command="editor:EditorCommands.Superscript" />
+                <MenuItem Command="editor:EditorCommands.Highlight" />
+                <MenuItem Command="editor:EditorCommands.InlineCode" />
+                <MenuItem Command="editor:EditorCommands.ClearFormatting" />
+                <Separator />
+                <MenuItem Header="Paragraph _style">
+                    <MenuItem Command="editor:EditorCommands.NormalText" />
+                    <MenuItem Command="editor:EditorCommands.Heading1" />
+                    <MenuItem Command="editor:EditorCommands.Heading2" />
+                    <MenuItem Command="editor:EditorCommands.Heading3" />
+                    <MenuItem Command="editor:EditorCommands.Heading4" />
+                    <MenuItem Command="editor:EditorCommands.Heading5" />
+                    <MenuItem Command="editor:EditorCommands.Heading6" />
+                </MenuItem>
+                <MenuItem Command="editor:EditorCommands.BulletList" />
+                <MenuItem Command="editor:EditorCommands.NumberedList" />
+                <MenuItem Command="editor:EditorCommands.Quote" />
+                <MenuItem Command="editor:EditorCommands.CodeBlock" />
+                <Separator />
+                <MenuItem Command="editor:EditorCommands.InsertLink" />
+                <MenuItem Command="editor:EditorCommands.InsertTable" />
+                <MenuItem Command="editor:EditorCommands.HorizontalRule" />
+            </MenuItem>
             <MenuItem Header="_Insert">
                 <MenuItem Command="editor:EditorCommands.ToggleTask" />
                 <MenuItem Command="editor:EditorCommands.InsertDate" />
@@ -107,6 +136,7 @@
                 <MenuItem Header="_Line numbers" IsCheckable="True" IsChecked="{Binding ShowLineNumbers}" />
                 <MenuItem Header="Show _whitespace" IsCheckable="True" IsChecked="{Binding ShowWhitespace}" />
                 <MenuItem Header="_Highlight current line" IsCheckable="True" IsChecked="{Binding HighlightCurrentLine}" />
+                <MenuItem Header="_Formatting toolbar" IsCheckable="True" IsChecked="{Binding ShowFormatBar}" />
                 <Separator />
                 <MenuItem Header="Zoom _in" Command="{Binding ZoomInCommand}" InputGestureText="Ctrl++" />
                 <MenuItem Header="Zoom _out" Command="{Binding ZoomOutCommand}" InputGestureText="Ctrl+-" />

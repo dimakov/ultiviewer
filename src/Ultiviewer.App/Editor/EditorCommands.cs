@@ -39,6 +39,39 @@ public static class EditorCommands
     public static RoutedUICommand InsertTime { get; } = Create("Insert time", nameof(InsertTime), Key.T, ModifierKeys.Alt | ModifierKeys.Shift);
     public static RoutedUICommand InsertDateTime { get; } = Create("Insert date and time", nameof(InsertDateTime), Key.F, ModifierKeys.Alt | ModifierKeys.Shift);
 
+    // OneNote's "Basic Text" group, as Markdown (only in Markdown documents).
+    public static RoutedUICommand Bold { get; } = Create("Bold", nameof(Bold), Key.B, ModifierKeys.Control);
+    public static RoutedUICommand Italic { get; } = Create("Italic", nameof(Italic), Key.I, ModifierKeys.Control);
+    public static RoutedUICommand Underline { get; } = Create("Underline", nameof(Underline), Key.U, ModifierKeys.Control);
+    public static RoutedUICommand Strikethrough { get; } = Create("Strikethrough", nameof(Strikethrough), Key.OemMinus, ModifierKeys.Control);
+    public static RoutedUICommand Subscript { get; } = Create("Subscript", nameof(Subscript));
+    public static RoutedUICommand Superscript { get; } = Create("Superscript", nameof(Superscript));
+    public static RoutedUICommand Highlight { get; } = Create("Highlight", nameof(Highlight), Key.H, ModifierKeys.Control | ModifierKeys.Alt);
+    public static RoutedUICommand InlineCode { get; } = Create("Inline code", nameof(InlineCode), Key.Oem3, ModifierKeys.Control);
+    public static RoutedUICommand ClearFormatting { get; } = Create("Clear formatting", nameof(ClearFormatting), Key.Space, ModifierKeys.Control);
+    public static RoutedUICommand NormalText { get; } = Create("Normal text", nameof(NormalText), Key.D0, ModifierKeys.Control | ModifierKeys.Alt);
+    public static RoutedUICommand Heading1 { get; } = Create("Heading 1", nameof(Heading1), Key.D1, ModifierKeys.Control | ModifierKeys.Alt);
+    public static RoutedUICommand Heading2 { get; } = Create("Heading 2", nameof(Heading2), Key.D2, ModifierKeys.Control | ModifierKeys.Alt);
+    public static RoutedUICommand Heading3 { get; } = Create("Heading 3", nameof(Heading3), Key.D3, ModifierKeys.Control | ModifierKeys.Alt);
+    public static RoutedUICommand Heading4 { get; } = Create("Heading 4", nameof(Heading4), Key.D4, ModifierKeys.Control | ModifierKeys.Alt);
+    public static RoutedUICommand Heading5 { get; } = Create("Heading 5", nameof(Heading5), Key.D5, ModifierKeys.Control | ModifierKeys.Alt);
+    public static RoutedUICommand Heading6 { get; } = Create("Heading 6", nameof(Heading6), Key.D6, ModifierKeys.Control | ModifierKeys.Alt);
+    public static RoutedUICommand Quote { get; } = Create("Quote", nameof(Quote));
+    public static RoutedUICommand CodeBlock { get; } = Create("Code block", nameof(CodeBlock));
+    public static RoutedUICommand BulletList { get; } = Create("Bulleted list", nameof(BulletList), Key.OemPeriod, ModifierKeys.Control);
+    public static RoutedUICommand NumberedList { get; } = Create("Numbered list", nameof(NumberedList), Key.OemQuestion, ModifierKeys.Control);
+    public static RoutedUICommand InsertLink { get; } = Create("Link…", nameof(InsertLink), Key.K, ModifierKeys.Control);
+    public static RoutedUICommand InsertTable { get; } = Create("Table", nameof(InsertTable));
+    public static RoutedUICommand HorizontalRule { get; } = Create("Horizontal line", nameof(HorizontalRule));
+
+    /// <summary>Commands that only apply to Markdown documents; their shortcuts win there (Ctrl+U underlines in notes, lowercases elsewhere).</summary>
+    public static IReadOnlySet<RoutedUICommand> MarkdownOnly { get; } = new HashSet<RoutedUICommand>
+    {
+        Bold, Italic, Underline, Strikethrough, Subscript, Superscript, Highlight, InlineCode, ClearFormatting,
+        NormalText, Heading1, Heading2, Heading3, Heading4, Heading5, Heading6, Quote, CodeBlock,
+        BulletList, NumberedList, InsertLink, InsertTable, HorizontalRule,
+    };
+
     /// <summary>All commands that carry a keyboard shortcut, for binding and conflict removal.</summary>
     public static IEnumerable<RoutedUICommand> WithGestures => typeof(EditorCommands)
         .GetProperties()

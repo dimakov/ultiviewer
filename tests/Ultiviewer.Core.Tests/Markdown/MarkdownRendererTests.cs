@@ -27,6 +27,31 @@ public class MarkdownRendererTests
         Assert.Contains("class=\"mermaid\"", html);
     }
 
+    [Theory]
+    [InlineData(InlineStyle.Bold, "<strong>w</strong>")]
+    [InlineData(InlineStyle.Italic, "<em>w</em>")]
+    [InlineData(InlineStyle.Underline, "<u>w</u>")]
+    [InlineData(InlineStyle.Strikethrough, "<del>w</del>")]
+    [InlineData(InlineStyle.Subscript, "<sub>w</sub>")]
+    [InlineData(InlineStyle.Superscript, "<sup>w</sup>")]
+    [InlineData(InlineStyle.Highlight, "<mark>w</mark>")]
+    [InlineData(InlineStyle.Code, "<code>w</code>")]
+    public void RendersEveryToolbarStyle(InlineStyle style, string expected)
+    {
+        var edit = MarkdownFormatting.ToggleInline("a w b", 2, 1, style);
+        var markdown = "a " + edit.Replacement + " b";
+
+        Assert.Contains(expected, MarkdownRenderer.ToHtml(markdown));
+    }
+
+    [Fact]
+    public void RendersFontColor()
+    {
+        var edit = MarkdownFormatting.SetColor("a w b", 2, 1, "#D64545");
+
+        Assert.Contains("<span style=\"color:#D64545\">w</span>", MarkdownRenderer.ToHtml("a " + edit.Replacement + " b"));
+    }
+
     [Fact]
     public void WikiLinks()
     {
