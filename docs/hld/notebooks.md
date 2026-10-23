@@ -71,3 +71,30 @@ Hooks for other features (`partial` methods in `MainViewModel.Notebooks.cs`): `O
 - New tree item kinds: extend `NodeKind`, the scanner's classification, `TreeNodeViewModel.Glyph` and the context menu in `NotebookTree.xaml.cs`.
 - Any operation that moves or deletes files must go through `NotebookOperations` so the page triple and the sidecars stay consistent, and must call `OnItemMoved`/`OnItemDeleted` so open documents follow.
 - Keep Core free of WPF: everything under `Core/Notebooks` is covered by `tests/…/Notebooks`.
+
+## Export and import (zip)
+
+`File → Export notebook as zip…` (or "Export as zip…" on a notebook or section in the tree) writes `<Name> <date>.zip`; `File → Import notebook from zip…` unpacks one as a new notebook and opens it. Code: `Core/Exchange/NotebookExchange.cs`, `App/ViewModels/MainViewModel.Exchange.cs`.
+
+**Zip layout** — manual order is baked into names so tools that only sort by name show the same order:
+
+```
+My Notes/01 Inbox.md
+My Notes/01 Inbox.assets/a.png
+My Notes/02 Projects/01 notes.txt
+My Notes/02 Projects/02 Plan.md
+My Notes/02 Projects/02 Plan/01 Sub.md      (subpages keep the page's prefix on their folder)
+ultiviewer-export.json
+```
+
+Prefixes are zero-padded to at least two digits per folder. Inside the exported pages, relative links to other exported items are rewritten to the numbered names (links leaving the exported folder are kept as written), and `[[Title]]` becomes `[[02 Title|Title]]` so it still reads the same. File contents keep their encoding and line endings; `.ultiviewer.json` sidecars are not exported (the manifest carries order and colors).
+
+**`ultiviewer-export.json`** — `{ format: "ultiviewer-notebook-export", version: 1, name, exportedUtc, generator, root }` where every item is `{ kind: notebook|section|page|file, name (original), path (in the zip), source (original relative path), subpages?, attachments?, color?, modifiedUtc?, tags?, children? }`, children in display order.
+
+**Import** — entries are extracted into a staging folder (any path escaping it rejects the archive), then:
+- with the manifest: items are renamed back to their original names, order/color sidecars are written from the manifest;
+- without it (a zip made by other tools): where every entry of a folder starts with a number (`01 `, `02_`, `3-`), the prefixes are stripped and their numbers become the order;
+- links are rewritten to the restored names (`LinkUpdater` with the recorded renames, `WikiLinkRenamer` for wiki links, dropping labels that just repeat the title);
+- the folder is moved to `<chosen folder>/<name>` (a unique name if taken).
+
+Exporting and re-importing reproduces the original files byte for byte (tested).

@@ -16,7 +16,7 @@ public interface IDialogService
     /// <summary>Yes / No / Cancel. Returns null for Cancel.</summary>
     bool? AskYesNoCancel(string message);
 
-    string? PickFolder(string title);
+    string? PickFolder(string title, string? initialFolder = null);
 
     string? PickFile(string title, string filter = "All files|*.*");
 
@@ -47,9 +47,15 @@ public sealed class DialogService : IDialogService
             _ => null,
         };
 
-    public string? PickFolder(string title)
+    public string? PickFolder(string title, string? initialFolder = null)
     {
         var dialog = new OpenFolderDialog { Title = title };
+        if (initialFolder is not null)
+        {
+            System.IO.Directory.CreateDirectory(initialFolder);
+            dialog.InitialDirectory = initialFolder;
+        }
+
         return dialog.ShowDialog(Owner) == true ? dialog.FolderName : null;
     }
 

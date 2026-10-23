@@ -15,14 +15,16 @@ public static class LinkUpdater
 {
     /// <summary>
     /// Rewrites <paramref name="text"/> of the page now at <paramref name="pagePath"/>. Returns the new text and
-    /// the number of changed links (0 means unchanged).
+    /// the number of changed links (0 means unchanged). With <paramref name="onlyInside"/>, links whose target
+    /// (before the moves) is outside that folder are left as written — used when a folder is copied elsewhere.
     /// </summary>
     public static (string Text, int Count) Rewrite(
         string text,
         string pagePath,
         IReadOnlyList<PathMove> moves,
         string? oldTitle = null,
-        string? newTitle = null)
+        string? newTitle = null,
+        string? onlyInside = null)
     {
         var oldPagePath = Unmap(pagePath, moves);
         var oldFolder = Path.GetDirectoryName(oldPagePath)!;
@@ -61,6 +63,11 @@ public static class LinkUpdater
                 absolute = Path.GetFullPath(Path.Combine(oldFolder, decoded.Replace('/', Path.DirectorySeparatorChar)));
             }
             catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+            {
+                return null;
+            }
+
+            if (onlyInside is not null && !IsInside(absolute, onlyInside))
             {
                 return null;
             }
@@ -111,6 +118,14 @@ public static class LinkUpdater
         }
 
         return path;
+    }
+
+    private static bool IsInside(string path, string folder)
+    {
+        var full = Path.TrimEndingDirectorySeparator(Path.GetFullPath(path));
+        var root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(folder));
+        return full.Equals(root, StringComparison.OrdinalIgnoreCase)
+            || full.StartsWith(root + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool TryRebase(string path, string from, string to, out string rebased)
