@@ -127,7 +127,8 @@
                 <MenuItem Command="editor:EditorCommands.InsertDateTime" />
             </MenuItem>
             <MenuItem x:Name="ViewMenu" Header="_View">
-                <MenuItem Header="_Edit only" Command="{Binding SetViewModeCommand}" CommandParameter="Edit" />
+                <MenuItem Header="Li_ve: formatted editing" Command="{Binding SetViewModeCommand}" CommandParameter="Live" />
+                <MenuItem Header="_Edit only (Markdown source)" Command="{Binding SetViewModeCommand}" CommandParameter="Edit" />
                 <MenuItem Header="_Split: editor and preview" Command="{Binding SetViewModeCommand}" CommandParameter="Split" />
                 <MenuItem Header="_Preview only" Command="{Binding SetViewModeCommand}" CommandParameter="Preview" />
                 <MenuItem Header="Cycle view mode" Command="{Binding CycleViewModeCommand}" InputGestureText="Ctrl+Shift+V" />
@@ -254,7 +255,10 @@
                     <views:TabStrip x:Name="Tabs" />
                     <StackPanel Grid.Column="1" Margin="8,0,8,0" VerticalAlignment="Center" Orientation="Horizontal"
                                 Visibility="{Binding ActiveViewMode, Converter={StaticResource NullToVisibility}}">
-                        <Button Style="{StaticResource ViewModeButton}" Content="Edit" ToolTip="Editor only (Ctrl+Shift+V cycles)"
+                        <Button Style="{StaticResource ViewModeButton}" Content="Live" ToolTip="Formatted editing: Markdown shows as it will look, syntax appears at the caret (Ctrl+Shift+V cycles)"
+                                Command="{Binding SetViewModeCommand}" CommandParameter="Live"
+                                Background="{Binding ActiveViewMode, Converter={StaticResource SelectedValueBrush}, ConverterParameter=Live}" />
+                        <Button Style="{StaticResource ViewModeButton}" Content="Edit" ToolTip="Markdown source only (Ctrl+Shift+V cycles)"
                                 Command="{Binding SetViewModeCommand}" CommandParameter="Edit"
                                 Background="{Binding ActiveViewMode, Converter={StaticResource SelectedValueBrush}, ConverterParameter=Edit}" />
                         <Button Style="{StaticResource ViewModeButton}" Content="Split" ToolTip="Editor and preview side by side (Ctrl+Shift+V cycles)"

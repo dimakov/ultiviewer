@@ -33,9 +33,10 @@ public sealed partial class MainViewModel
         {
             SetTabViewMode(tab, tab.ViewMode switch
             {
+                ViewMode.Live => ViewMode.Edit,
                 ViewMode.Edit => ViewMode.Split,
                 ViewMode.Split => ViewMode.Preview,
-                _ => ViewMode.Edit,
+                _ => ViewMode.Live,
             });
         }
     }

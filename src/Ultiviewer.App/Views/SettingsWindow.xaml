@@ -31,6 +31,8 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
                     <TextBlock Style="{StaticResource Label}" Text="Theme" />
                     <ComboBox Grid.Column="1" ItemsSource="{Binding Themes}" SelectedItem="{Binding Theme}" AutomationProperties.Name="Theme" />
@@ -40,6 +42,14 @@
                     <TextBlock Grid.Row="2" Margin="0,8,12,0" Style="{StaticResource Label}" Text="Font size" />
                     <TextBox Grid.Row="2" Grid.Column="1" Width="90" Margin="0,8,0,0" HorizontalAlignment="Left"
                              Text="{Binding EditorFontSize, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Font size" />
+                    <TextBlock Grid.Row="3" Margin="0,8,12,0" Style="{StaticResource Label}" Text="Live view font" />
+                    <ComboBox Grid.Row="3" Grid.Column="1" Margin="0,8,0,0" IsEditable="True" ItemsSource="{Binding Fonts}"
+                              Text="{Binding LiveFontFamily, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Live view font" />
+                    <TextBlock Grid.Row="4" Margin="0,8,12,0" Style="{StaticResource Label}" Text="Live view text width" />
+                    <StackPanel Grid.Row="4" Grid.Column="1" Margin="0,8,0,0" Orientation="Horizontal">
+                        <TextBox Width="90" Text="{Binding LiveMaxWidth, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Live view text width" />
+                        <TextBlock Margin="8,0,0,0" VerticalAlignment="Center" Opacity="0.7" Text="pixels (0 = full width)" />
+                    </StackPanel>
                 </Grid>
                 <CheckBox Margin="0,10,0,0" Content="Word wrap" IsChecked="{Binding WordWrap}" />
                 <CheckBox Margin="0,6,0,0" Content="Line numbers" IsChecked="{Binding ShowLineNumbers}" />

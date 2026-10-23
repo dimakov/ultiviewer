@@ -11,6 +11,7 @@ using ICSharpCode.AvalonEdit.Rendering;
 using Ultiviewer.App.Editor;
 using Ultiviewer.App.Services;
 using Ultiviewer.App.ViewModels;
+using Ultiviewer.Core.Settings;
 
 namespace Ultiviewer.App.Views;
 
@@ -33,6 +34,7 @@ public partial class EditorHost : UserControl
         {
             ApplyPalette();
             ApplyHighlighting();
+            _live?.SetStyles(CreateLiveStyles());
         };
         Editor.TextArea.Caret.PositionChanged += (_, _) => UpdateCaretStatus();
         Editor.TextArea.SelectionChanged += (_, _) => UpdateCaretStatus();
@@ -43,6 +45,7 @@ public partial class EditorHost : UserControl
         InitializeCommands();
         InitializeConveniences();
         InitializeFormatting();
+        InitializeLive();
         SplitterMoved += SavePreviewRatio;
     }
 
@@ -273,23 +276,13 @@ public partial class EditorHost : UserControl
         }
 
         var settings = _vm.Settings;
-        try
-        {
-            Editor.FontFamily = new FontFamily(settings.EditorFontFamily);
-        }
-        catch (ArgumentException)
-        {
-            Editor.FontFamily = new FontFamily("Consolas");
-        }
-
         Editor.FontSize = settings.EditorFontSize;
-        Editor.WordWrap = settings.WordWrap;
-        Editor.ShowLineNumbers = settings.ShowLineNumbers;
         var options = Editor.Options;
         options.ShowSpaces = settings.ShowWhitespace;
         options.ShowTabs = settings.ShowWhitespace;
         options.ShowEndOfLine = settings.ShowWhitespace;
-        options.HighlightCurrentLine = settings.HighlightCurrentLine;
+        _live?.SetStyles(CreateLiveStyles());
+        ApplyEditorAppearance();
         UpdateFormatBar();
     }
 
@@ -311,7 +304,7 @@ public partial class EditorHost : UserControl
     }
 
     private void ApplyHighlighting() =>
-        Editor.SyntaxHighlighting = _current is null
+        Editor.SyntaxHighlighting = _current is null || EffectiveMode == ViewMode.Live
             ? null
             : HighlightingRegistry.Instance.Get(_current.Language, ThemeService.Instance.IsDark);
 

@@ -14,6 +14,9 @@ public enum ViewMode
     Edit,
     Split,
     Preview,
+
+    /// <summary>Formatted editing of the source (Obsidian's Live Preview).</summary>
+    Live,
 }
 
 public sealed class NotebookEntry
@@ -58,7 +61,13 @@ public sealed class AppSettings
 
     public bool DefaultUtf8Bom { get; set; }
 
-    public ViewMode DefaultMarkdownViewMode { get; set; } = ViewMode.Split;
+    public ViewMode DefaultMarkdownViewMode { get; set; } = ViewMode.Live;
+
+    /// <summary>Proportional font of the Live view; code, tables and front matter keep <see cref="EditorFontFamily"/>.</summary>
+    public string LiveFontFamily { get; set; } = "Segoe UI Variable Text, Segoe UI";
+
+    /// <summary>Widest text column of the Live view in pixels, centered; 0 uses the full width.</summary>
+    public int LiveMaxWidth { get; set; } = 820;
 
     public string DateFormat { get; set; } = "yyyy-MM-dd";
 

@@ -34,7 +34,7 @@ public static class KeyboardShortcuts
         yield return ("ZoomIn", "Zoom in", "Ctrl+OemPlus|Ctrl+Add", vm => vm.ZoomInCommand);
         yield return ("ZoomOut", "Zoom out", "Ctrl+OemMinus|Ctrl+Subtract", vm => vm.ZoomOutCommand);
         yield return ("ZoomReset", "Reset zoom", "Ctrl+D0|Ctrl+NumPad0", vm => vm.ZoomResetCommand);
-        yield return ("CycleViewMode", "Cycle Edit / Split / Preview", "Ctrl+Shift+V", vm => vm.CycleViewModeCommand);
+        yield return ("CycleViewMode", "Cycle Live / Edit / Split / Preview", "Ctrl+Shift+V", vm => vm.CycleViewModeCommand);
         yield return ("GoToPage", "Go to page", "Ctrl+E", vm => vm.QuickOpenCommand);
         yield return ("Settings", "Settings", "Ctrl+OemComma", vm => vm.OpenSettingsCommand);
     }

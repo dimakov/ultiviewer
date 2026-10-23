@@ -2,7 +2,7 @@
 
 ## What it does
 
-Shows a live, offline rendering of the active Markdown tab next to (Split), instead of (Preview) or not at all (Edit) — per tab, cycled with **Ctrl+Shift+V** or the Edit / Split / Preview buttons right of the tabs. The last choice becomes the default for newly opened pages.
+Shows a live, offline rendering of the active Markdown tab next to (Split), instead of (Preview) or not at all (Edit, and Live, which formats the editor itself — see `live-preview.md`) — per tab, cycled with **Ctrl+Shift+V** or the Live / Edit / Split / Preview buttons right of the tabs. The last choice becomes the default for newly opened pages.
 
 - GitHub-flavoured Markdown plus tables, task lists, footnotes, front matter (hidden), math (KaTeX), Mermaid diagrams, highlighted code (highlight.js) and `[[wiki links]]`.
 - A OneNote-like header: the page title (hidden when the page starts with its own `# H1`) and "Notebook › Section · edited date".

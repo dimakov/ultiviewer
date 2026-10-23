@@ -25,6 +25,8 @@ public sealed partial class SettingsViewModel : ObservableObject
         _defaultLineEnding = settings.DefaultLineEnding;
         _defaultUtf8Bom = settings.DefaultUtf8Bom;
         _defaultMarkdownViewMode = settings.DefaultMarkdownViewMode;
+        _liveFontFamily = settings.LiveFontFamily;
+        _liveMaxWidth = settings.LiveMaxWidth;
         _dateFormat = settings.DateFormat;
         _timeFormat = settings.TimeFormat;
         Shortcuts = KeyboardShortcuts.All(settings.Shortcuts);
@@ -33,7 +35,7 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     public IReadOnlyList<ThemePreference> Themes { get; } = Enum.GetValues<ThemePreference>();
 
-    public IReadOnlyList<ViewMode> ViewModes { get; } = Enum.GetValues<ViewMode>();
+    public IReadOnlyList<ViewMode> ViewModes { get; } = [ViewMode.Live, ViewMode.Edit, ViewMode.Split, ViewMode.Preview];
 
     public IReadOnlyList<KeyValuePair<LineEnding, string>> LineEndings { get; } =
     [
@@ -89,6 +91,12 @@ public sealed partial class SettingsViewModel : ObservableObject
     private ViewMode _defaultMarkdownViewMode;
 
     [ObservableProperty]
+    private string _liveFontFamily;
+
+    [ObservableProperty]
+    private int _liveMaxWidth;
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(DatePreview))]
     private string _dateFormat;
 
@@ -130,6 +138,8 @@ public sealed partial class SettingsViewModel : ObservableObject
         settings.DefaultLineEnding = DefaultLineEnding;
         settings.DefaultUtf8Bom = DefaultUtf8Bom;
         settings.DefaultMarkdownViewMode = DefaultMarkdownViewMode;
+        settings.LiveFontFamily = string.IsNullOrWhiteSpace(LiveFontFamily) ? "Segoe UI" : LiveFontFamily;
+        settings.LiveMaxWidth = LiveMaxWidth <= 0 ? 0 : Math.Clamp(LiveMaxWidth, 300, 4000);
         settings.DateFormat = DatePreview == "Invalid format" ? "yyyy-MM-dd" : DateFormat;
         settings.TimeFormat = DatePreview == "Invalid format" ? "HH:mm" : TimeFormat;
     }

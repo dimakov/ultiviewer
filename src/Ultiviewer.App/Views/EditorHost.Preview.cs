@@ -24,6 +24,9 @@ public partial class EditorHost
 
     private ViewMode EffectiveMode => _current is { IsMarkdown: true } tab ? tab.ViewMode : ViewMode.Edit;
 
+    /// <summary>Edit and Live show only the editor; Split and Preview need the rendered preview.</summary>
+    private bool PreviewHidden => EffectiveMode is ViewMode.Edit or ViewMode.Live;
+
     private void InitializePreview()
     {
         _renderTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(180), DispatcherPriority.Background, (_, _) =>
@@ -61,8 +64,9 @@ public partial class EditorHost
 
         Editor.Visibility = mode == ViewMode.Preview ? Visibility.Collapsed : Visibility.Visible;
         Splitter.Visibility = mode == ViewMode.Split ? Visibility.Visible : Visibility.Collapsed;
-        PreviewHost.Visibility = mode == ViewMode.Edit ? Visibility.Collapsed : Visibility.Visible;
-        if (mode != ViewMode.Edit)
+        PreviewHost.Visibility = PreviewHidden ? Visibility.Collapsed : Visibility.Visible;
+        ApplyEditorAppearance();
+        if (!PreviewHidden)
         {
             ShowPreview();
         }
@@ -109,7 +113,7 @@ public partial class EditorHost
 
     private async void RenderPreview(bool scrollToSource)
     {
-        if (_preview is null || EffectiveMode == ViewMode.Edit || _current is not { } tab || _vm is null)
+        if (_preview is null || PreviewHidden || _current is not { } tab || _vm is null)
         {
             return;
         }
@@ -136,7 +140,7 @@ public partial class EditorHost
             return;
         }
 
-        if (version != _renderVersion || _current != tab || EffectiveMode == ViewMode.Edit)
+        if (version != _renderVersion || _current != tab || PreviewHidden)
         {
             return;
         }
@@ -168,7 +172,7 @@ public partial class EditorHost
 
     private void OnDocumentEdited(DocumentTabViewModel tab)
     {
-        if (tab == _current && EffectiveMode != ViewMode.Edit && _renderTimer is not null)
+        if (tab == _current && !PreviewHidden && _renderTimer is not null)
         {
             _renderTimer.Stop();
             _renderTimer.Start();
