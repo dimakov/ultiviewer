@@ -35,6 +35,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     public void Initialize(IEnumerable<string> startupFiles)
     {
         LoadNotebooks();
+        InitializeSearch();
         _syncingSelection = true;
         try
         {
@@ -60,6 +61,8 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         DisposeWatchers();
+        _searchCancellation?.Cancel();
+        _search?.Dispose();
     }
 
     /// <summary>Runs a file operation and shows its error to the user instead of throwing.</summary>

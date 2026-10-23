@@ -47,6 +47,7 @@
         <KeyBinding Gesture="Ctrl+Subtract" Command="{Binding ZoomOutCommand}" />
         <KeyBinding Gesture="Ctrl+D0" Command="{Binding ZoomResetCommand}" />
         <KeyBinding Gesture="Ctrl+Shift+V" Command="{Binding CycleViewModeCommand}" />
+        <KeyBinding Gesture="Ctrl+E" Command="{Binding QuickOpenCommand}" />
         <KeyBinding Gesture="Ctrl+NumPad0" Command="{Binding ZoomResetCommand}" />
     </Window.InputBindings>
 
@@ -99,6 +100,10 @@
                     <MenuItem Header="_Light" IsCheckable="True" IsChecked="{Binding IsThemeLight, Mode=OneWay}" Command="{Binding SetThemeCommand}" CommandParameter="Light" />
                     <MenuItem Header="_Dark" IsCheckable="True" IsChecked="{Binding IsThemeDark, Mode=OneWay}" Command="{Binding SetThemeCommand}" CommandParameter="Dark" />
                 </MenuItem>
+            </MenuItem>
+            <MenuItem Header="_Search">
+                <MenuItem Header="_Find in notebooks…" Click="OnFindInNotebooks" InputGestureText="Ctrl+Shift+F" />
+                <MenuItem Header="_Go to page…" Command="{Binding QuickOpenCommand}" InputGestureText="Ctrl+E" />
             </MenuItem>
             <MenuItem Header="_Notebook">
                 <MenuItem Header="New _page" Command="{Binding NewPageCommand}" InputGestureText="Ctrl+N" />
@@ -168,7 +173,9 @@
             <Grid x:Name="DocumentArea" Grid.Column="2">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
-                    <RowDefinition Height="*" />
+                    <RowDefinition Height="*" MinHeight="80" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition x:Name="ResultsRow" Height="0" />
                 </Grid.RowDefinitions>
                 <Grid Grid.Row="0">
                     <Grid.ColumnDefinitions>
@@ -194,6 +201,13 @@
                 <TextBlock Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.6"
                            Text="Select a page in the tree, or press Ctrl+N for a new page"
                            Visibility="{Binding HasTabs, Converter={StaticResource InverseBoolToVisibility}}" />
+                <GridSplitter x:Name="ResultsSplitter" Grid.Row="2" Height="5" HorizontalAlignment="Stretch" Background="Transparent"
+                              ResizeBehavior="PreviousAndNext" ResizeDirection="Rows" Focusable="False"
+                              Visibility="{Binding IsSearchPanelOpen, Converter={StaticResource BoolToVisibility}}" />
+                <Border Grid.Row="3" BorderThickness="0,1,0,0" BorderBrush="#30808080"
+                        Visibility="{Binding IsSearchPanelOpen, Converter={StaticResource BoolToVisibility}}">
+                    <views:SearchPanel x:Name="SearchView" />
+                </Border>
             </Grid>
         </Grid>
     </DockPanel>

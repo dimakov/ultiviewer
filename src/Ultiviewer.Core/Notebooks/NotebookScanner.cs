@@ -34,6 +34,37 @@ public static class NotebookScanner
     public static bool IsPageFile(string fileName) =>
         fileName.EndsWith(PageExtension, StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>All page files of a notebook, applying the same hiding rules as the tree.</summary>
+    public static IEnumerable<string> EnumeratePageFiles(string root)
+    {
+        var pending = new Stack<string>();
+        pending.Push(root);
+        while (pending.Count > 0)
+        {
+            var folder = pending.Pop();
+            foreach (var info in EnumerateSafely(folder))
+            {
+                if (IsHidden(info))
+                {
+                    continue;
+                }
+
+                if (info is DirectoryInfo directory)
+                {
+                    if (!directory.Name.EndsWith(AssetsSuffix, StringComparison.OrdinalIgnoreCase)
+                        && (directory.Attributes & FileAttributes.ReparsePoint) == 0)
+                    {
+                        pending.Push(directory.FullName);
+                    }
+                }
+                else if (IsPageFile(info.Name))
+                {
+                    yield return info.FullName;
+                }
+            }
+        }
+    }
+
     public static bool IsHiddenName(string name) =>
         name.StartsWith('.') || name.EndsWith(TempSuffix, StringComparison.OrdinalIgnoreCase);
 

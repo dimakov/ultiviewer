@@ -20,7 +20,33 @@ public partial class MainWindow : Window
         RestorePlacement();
         Tree.OpenRequested += node => _vm.OpenDocument(node.Path, preview: false, focus: true);
         Activated += (_, _) => _vm.CheckAllDiskStates();
+        _vm.SearchFocusRequested += SearchView.FocusQuery;
+        _vm.QuickOpenRequested += () => new Views.QuickOpenWindow(_vm, this).Show();
+        _vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(MainViewModel.IsSearchPanelOpen))
+            {
+                UpdateResultsRow();
+            }
+        };
+        ResultsSplitter.DragCompleted += (_, _) => _vm.Session.ResultsHeight = ResultsRow.ActualHeight;
+        PreviewKeyDown += OnWindowPreviewKeyDown;
     }
+
+    private void UpdateResultsRow() =>
+        ResultsRow.Height = _vm.IsSearchPanelOpen ? new GridLength(Math.Clamp(_vm.Session.ResultsHeight, 100, 800)) : new GridLength(0);
+
+    private void OnWindowPreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        if (e.Key == System.Windows.Input.Key.F && System.Windows.Input.Keyboard.Modifiers == (System.Windows.Input.ModifierKeys.Control | System.Windows.Input.ModifierKeys.Shift))
+        {
+            OnFindInNotebooks(this, e);
+            e.Handled = true;
+        }
+    }
+
+    private void OnFindInNotebooks(object sender, RoutedEventArgs e) =>
+        _vm.OpenSearchCommand.Execute(_vm.HasTabs ? EditorView.TextEditor.SelectedText : null);
 
     protected override void OnClosing(CancelEventArgs e)
     {
@@ -31,6 +57,11 @@ public partial class MainWindow : Window
         }
 
         SavePlacement();
+        if (_vm.IsSearchPanelOpen)
+        {
+            _vm.Session.ResultsHeight = ResultsRow.ActualHeight;
+        }
+
         _vm.SaveState();
     }
 

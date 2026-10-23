@@ -78,6 +78,7 @@ public partial class EditorHost : UserControl
             _vm.CaptureEditorState -= CaptureCurrent;
             _vm.EditorSettingsChanged -= ApplySettings;
             _vm.DocumentEdited -= OnDocumentEdited;
+            _vm.SelectRangeRequested -= SelectRange;
         }
 
         _vm = vm;
@@ -94,6 +95,7 @@ public partial class EditorHost : UserControl
         vm.CaptureEditorState += CaptureCurrent;
         vm.EditorSettingsChanged += ApplySettings;
         vm.DocumentEdited += OnDocumentEdited;
+        vm.SelectRangeRequested += SelectRange;
         ApplySettings();
         ApplyPalette();
         SwitchTo(vm.ActiveTab);
@@ -228,6 +230,22 @@ public partial class EditorHost : UserControl
         Editor.TextArea.Caret.Offset = line.Offset;
         Editor.UpdateLayout();
         Editor.ScrollTo(line.LineNumber, 1, VisualYPosition.LineTop, Editor.TextArea.TextView.ActualHeight / 3, 0.3);
+    }
+
+    /// <summary>Selects text on a 1-based line (search results, find bar) and scrolls it into view.</summary>
+    public void SelectRange(int lineNumber, int column, int length)
+    {
+        var document = Editor.Document;
+        if (lineNumber < 1 || lineNumber > document.LineCount)
+        {
+            return;
+        }
+
+        var line = document.GetLineByNumber(lineNumber);
+        var start = line.Offset + Math.Clamp(column, 0, line.Length);
+        Editor.Select(start, Math.Clamp(length, 0, line.EndOffset - start));
+        Editor.TextArea.Caret.Offset = start;
+        Editor.ScrollTo(lineNumber, column + 1, VisualYPosition.LineTop, Editor.TextArea.TextView.ActualHeight / 3, 0.3);
     }
 
     private void UpdateCaretStatus()
