@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Markdig;
 using Markdig.Renderers;
 using Markdig.Renderers.Html;
@@ -9,7 +10,7 @@ namespace Ultiviewer.Core.Markdown;
 /// Markdown → HTML for the preview. Every block element carries <c>data-line</c> (1-based source line) so the
 /// preview can scroll in step with the editor and map clicks (task checkboxes, double-click) back to lines.
 /// </summary>
-public static class MarkdownRenderer
+public static partial class MarkdownRenderer
 {
     public static MarkdownPipeline Pipeline { get; } = new MarkdownPipelineBuilder()
         .UseAdvancedExtensions()
@@ -34,6 +35,11 @@ public static class MarkdownRenderer
         Pipeline.Setup(renderer);
         renderer.Render(document);
         writer.Flush();
-        return writer.ToString();
+        return ImageSize().Replace(writer.ToString(), match =>
+            $"alt=\"{match.Groups["alt"].Value}\" width=\"{match.Groups["w"].Value}\"" + (match.Groups["h"].Success ? $" height=\"{match.Groups["h"].Value}\"" : ""));
     }
+
+    /// <summary>Obsidian's image size in the alt text: <c>![diagram|300](…)</c> or <c>|300x200</c>.</summary>
+    [GeneratedRegex(@"alt=""(?<alt>[^""|]*)\|(?<w>\d{1,4})(?:x(?<h>\d{1,4}))?""")]
+    private static partial Regex ImageSize();
 }

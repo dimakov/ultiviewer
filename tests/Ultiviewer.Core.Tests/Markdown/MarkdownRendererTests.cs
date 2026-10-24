@@ -53,6 +53,14 @@ public class MarkdownRendererTests
     }
 
     [Fact]
+    public void AppliesObsidianImageSizes()
+    {
+        Assert.Contains("alt=\"cat\" width=\"300\"", MarkdownRenderer.ToHtml("![cat|300](cat.png)"), StringComparison.Ordinal);
+        Assert.Contains("alt=\"cat\" width=\"300\" height=\"200\"", MarkdownRenderer.ToHtml("![cat|300x200](cat.png)"), StringComparison.Ordinal);
+        Assert.Contains("alt=\"plain\"", MarkdownRenderer.ToHtml("![plain](cat.png)"), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void WikiLinks()
     {
         var html = MarkdownRenderer.ToHtml("See [[Meeting notes]] and [[Projects/Plan|the plan]], not [normal](x.md).");
