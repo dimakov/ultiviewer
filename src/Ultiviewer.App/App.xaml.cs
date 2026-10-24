@@ -13,6 +13,7 @@ public partial class App : Application
     private SingleInstance? _instance;
     private GlobalHotkey? _hotkey;
     private TrayIcon? _tray;
+    private ReminderService? _reminders;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -45,6 +46,8 @@ public partial class App : Application
         ApplyCaptureSettings();
         _viewModel.CaptureSettingsChanged += ApplyCaptureSettings;
         SessionEnding += (_, _) => _viewModel.ExitRequested = true;
+        _reminders = new ReminderService(_viewModel);
+        _reminders.Start();
     }
 
     private void ApplyCaptureSettings()
@@ -87,6 +90,7 @@ public partial class App : Application
     {
         _hotkey?.Dispose();
         _tray?.Dispose();
+        _reminders?.Dispose();
         _viewModel?.Dispose();
         _instance?.Dispose();
         base.OnExit(e);

@@ -222,7 +222,9 @@ public sealed partial class MainViewModel
 
         var line = document.GetLineByNumber(lineNumber);
         var text = document.GetText(line.Offset, line.Length);
-        var toggled = TaskMarkers.Toggle(text);
+
+        // Completing adds the done date and, for a recurring task, its next occurrence above it.
+        var toggled = string.Join(tab.Format.NewLine, TaskCompletion.Toggle(text, DateOnly.FromDateTime(DateTime.Today)));
         if (toggled != text)
         {
             document.Replace(line.Offset, line.Length, toggled);

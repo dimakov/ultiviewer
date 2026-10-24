@@ -8,7 +8,7 @@
 | Drop files | Dropping files on a Markdown page copies them into `Title.assets/` and inserts links (images inline). Shift+drop, or dropping on other documents, opens the files instead. |
 | Lists | Enter continues `-`/`*`/`+` bullets, numbered items (incremented), tasks (`- [ ]`) and `>` quotes; Enter on an empty item ends the list. |
 | `[[` completion | Typing `[[` lists page titles; choosing one inserts `Title]]`. |
-| To-do | Ctrl+1 cycles plain → `- [ ]` → `- [x]` → plain (see editing tools). The **To-do pane** lists open tasks of all notebooks (optionally completed ones); ticking one edits its page; clicking opens the page at that line. |
+| To-do | Ctrl+1 cycles plain → `- [ ]` → `- [x]` → plain (see editing tools). The **To-do pane** lists open tasks of all notebooks grouped by due date (optionally completed ones); ticking one edits its page; clicking opens the page at that line. Dates, priorities, recurrence and reminders: see `tasks.md`. |
 | Tags | `#tag` (letters first, `/` for hierarchy) or front matter `tags:`. Rendered as chips in the preview (click = search). The **Tags pane** lists all tags with page counts. |
 | Templates | `Notebook → New page from template`: Markdown files in the notebook's `_templates/` folder, with `{{title}}`, `{{date}}`, `{{time}}`, `{{datetime}}`. "Edit templates…" creates the folder with a Meeting example. Pages are never created inside `_templates`. |
 | Favorites / recent | `Go` menu: favorites (also from the page context menu) and the 15 most recent pages; Ctrl+E lists recent pages first. Stored in `session.json` (`favoritePages`, `recentPages`). |

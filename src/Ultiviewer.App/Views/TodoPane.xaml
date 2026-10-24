@@ -6,25 +6,50 @@
         <Grid>
             <ListBox x:Name="TaskList" BorderThickness="0" Background="Transparent" ItemsSource="{Binding Tasks}"
                      AutomationProperties.Name="Tasks in all notebooks" HorizontalContentAlignment="Stretch"
+                     VirtualizingPanel.IsVirtualizingWhenGrouping="True"
                      ScrollViewer.HorizontalScrollBarVisibility="Disabled" KeyDown="OnTaskKeyDown">
+                <ListBox.GroupStyle>
+                    <GroupStyle>
+                        <GroupStyle.HeaderTemplate>
+                            <DataTemplate>
+                                <TextBlock x:Name="Header" Margin="4,10,0,4" FontSize="12" FontWeight="SemiBold">
+                                    <Run Text="{Binding Name, Mode=OneWay}" /><Run Text="  " /><Run Text="{Binding ItemCount, Mode=OneWay}" FontWeight="Normal" />
+                                </TextBlock>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding Name}" Value="Overdue">
+                                        <Setter TargetName="Header" Property="Foreground" Value="#D64545" />
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </GroupStyle.HeaderTemplate>
+                    </GroupStyle>
+                </ListBox.GroupStyle>
                 <ListBox.ItemTemplate>
                     <DataTemplate>
                         <DockPanel Background="Transparent" MouseLeftButtonUp="OnTaskTextClicked">
                             <CheckBox DockPanel.Dock="Left" VerticalAlignment="Top" Margin="0,1,6,0" MinWidth="0"
                                       IsChecked="{Binding Done}"
-                                      AutomationProperties.Name="{Binding Text}" />
+                                      AutomationProperties.Name="{Binding Description}" />
                             <StackPanel>
-                                <TextBlock Text="{Binding Text}" TextWrapping="Wrap" />
+                                <TextBlock Text="{Binding Description}" TextWrapping="Wrap" />
+                                <TextBlock FontSize="11" TextTrimming="CharacterEllipsis">
+                                    <Run x:Name="Due" Text="{Binding DueLabel, Mode=OneWay}" /><Run Text="{Binding Extras, Mode=OneWay, StringFormat=' {0}'}" />
+                                </TextBlock>
                                 <TextBlock FontSize="11" Opacity="0.6" TextTrimming="CharacterEllipsis">
                                     <Run Text="{Binding Title, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding Location, Mode=OneWay}" />
                                 </TextBlock>
                             </StackPanel>
                         </DockPanel>
+                        <DataTemplate.Triggers>
+                            <DataTrigger Binding="{Binding IsOverdue}" Value="True">
+                                <Setter TargetName="Due" Property="Foreground" Value="#D64545" />
+                            </DataTrigger>
+                        </DataTemplate.Triggers>
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>
             <TextBlock Margin="12" TextWrapping="Wrap" Opacity="0.6"
-                       Text="Nothing to do. Tasks are list items like '- [ ] call Bob' (Ctrl+1 makes one) in any page."
+                       Text="Nothing to do. Tasks are list items like '- [ ] call Bob 📅 2026-10-25' (Ctrl+1 makes one) in any page."
                        Visibility="{Binding Tasks.Count, Converter={StaticResource ZeroToVisibility}}" />
         </Grid>
     </DockPanel>

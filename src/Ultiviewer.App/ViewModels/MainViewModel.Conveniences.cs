@@ -30,6 +30,78 @@ public sealed class TaskEntry(string path, string title, int line, bool done, st
 
     public string Location { get; } = location;
 
+    /// <summary>Dates, priority, recurrence and reminder written in the task (Obsidian Tasks syntax).</summary>
+    public TaskInfo Info { get; } = TaskInfo.Parse(text);
+
+    /// <summary>The task without its metadata.</summary>
+    public string Description => Info.Description.Length > 0 ? Info.Description : Text;
+
+    /// <summary>The To-do pane's group: Overdue, Today, Upcoming (7 days), Later, No date, Done.</summary>
+    public string Group => GroupAndRank(DateOnly.FromDateTime(DateTime.Today)).Group;
+
+    public int GroupRank => GroupAndRank(DateOnly.FromDateTime(DateTime.Today)).Rank;
+
+    public bool IsOverdue => GroupRank == 0;
+
+    /// <summary>"Today", "Tomorrow", "Fri", "3 Nov", "2 days overdue"…, or null without a date.</summary>
+    public string? DueLabel
+    {
+        get
+        {
+            if (Info.PlannedDate is not { } date)
+            {
+                return null;
+            }
+
+            var today = DateOnly.FromDateTime(DateTime.Today);
+            var days = date.DayNumber - today.DayNumber;
+            var label = days switch
+            {
+                0 => "Today",
+                1 => "Tomorrow",
+                -1 when !Done => "Yesterday · overdue",
+                < 0 when !Done => $"{-days} days overdue",
+                > 1 and < 7 => date.ToString("dddd", System.Globalization.CultureInfo.CurrentCulture),
+                _ => date.ToString(date.Year == today.Year ? "d MMM" : "d MMM yyyy", System.Globalization.CultureInfo.CurrentCulture),
+            };
+            return Info.Due is null && Info.Scheduled is not null ? "Scheduled " + label.ToLowerInvariant() : label;
+        }
+    }
+
+    public string? PriorityGlyph => Info.Priority switch
+    {
+        TaskPriority.Highest => "🔺",
+        TaskPriority.High => "⏫",
+        TaskPriority.Medium => "🔼",
+        TaskPriority.Low => "🔽",
+        TaskPriority.Lowest => "⏬",
+        _ => null,
+    };
+
+    public string? Extras => string.Join(" ", new[] { PriorityGlyph, Info.Recurrence is null ? null : "🔁", Info.Reminder is { } at ? "⏰ " + at.ToString("HH:mm", System.Globalization.CultureInfo.CurrentCulture) : null }.Where(s => s is not null)) is { Length: > 0 } extras ? extras : null;
+
+    private (string Group, int Rank) GroupAndRank(DateOnly today)
+    {
+        if (Done)
+        {
+            return ("Done", 5);
+        }
+
+        if ((Info.Due ?? Info.Scheduled) is not { } date)
+        {
+            return ("No date", 4);
+        }
+
+        var days = date.DayNumber - today.DayNumber;
+        return days switch
+        {
+            < 0 => ("Overdue", 0),
+            0 => ("Today", 1),
+            < 8 => ("Upcoming", 2),
+            _ => ("Later", 3),
+        };
+    }
+
     public bool Done
     {
         get => _done;
@@ -58,6 +130,9 @@ public sealed partial class MainViewModel
     private bool _showDoneTasks;
 
     partial void OnShowDoneTasksChanged(bool value) => RefreshSummaries();
+
+    /// <summary>The To-do list was reloaded (reminders check it).</summary>
+    public event Action? TasksRefreshed;
 
     // ---- Links after renames and moves ----
 
@@ -306,18 +381,50 @@ public sealed partial class MainViewModel
         }
 
         Tasks.Clear();
-        foreach (var task in tasks)
+        var entries = tasks.Select(t => new TaskEntry(t.Path, t.Title, t.Line, t.Done, t.Text, LocationOf(t.Path), ToggleTaskInPage))
+            .OrderBy(t => t.GroupRank)
+            .ThenByDescending(t => t.Info.Priority)
+            .ThenBy(t => t.Info.Due ?? t.Info.Scheduled ?? DateOnly.MaxValue)
+            .ThenBy(t => t.Title, StringComparer.CurrentCultureIgnoreCase)
+            .ThenBy(t => t.Line);
+        foreach (var entry in entries)
         {
-            Tasks.Add(new TaskEntry(task.Path, task.Title, task.Line, task.Done, task.Text, LocationOf(task.Path), ToggleTaskInPage));
+            Tasks.Add(entry);
         }
+
+        TasksRefreshed?.Invoke();
     }
 
     /// <summary>Ticks or unticks a task in its page (through the open tab, or directly in the file).</summary>
-    public void ToggleTaskInPage(TaskEntry task)
+    public void ToggleTaskInPage(TaskEntry task) =>
+        UpdateTaskLine(task, line => TaskCompletion.Toggle(line, DateOnly.FromDateTime(DateTime.Today)));
+
+    /// <summary>Moves a task's reminder to <paramref name="minutes"/> from now (snooze).</summary>
+    public void SnoozeTask(TaskEntry task, int minutes) =>
+        UpdateTaskLine(task, line => [TaskCompletion.SetReminder(line, DateTime.Now.AddMinutes(minutes))]);
+
+    /// <summary>
+    /// Rewrites a task's line (it may become several lines, as when a recurring task is completed): through the
+    /// open tab as an undoable edit that autosaves, or directly in the file.
+    /// </summary>
+    private void UpdateTaskLine(TaskEntry task, Func<string, IReadOnlyList<string>> change)
     {
         if (OpenTabs.FirstOrDefault(t => t.IsAt(task.Path)) is { } tab)
         {
-            ToggleTaskAtLine(tab, task.Line);
+            var document = tab.Document;
+            if (task.Line < 1 || task.Line > document.LineCount)
+            {
+                return;
+            }
+
+            var line = document.GetLineByNumber(task.Line);
+            var text = document.GetText(line);
+            var updated = string.Join(tab.Format.NewLine, change(text));
+            if (updated != text)
+            {
+                document.Replace(line.Offset, line.Length, updated);
+            }
+
             if (AutosaveEligible(tab))
             {
                 SaveTab(tab, interactive: false);
@@ -336,7 +443,8 @@ public sealed partial class MainViewModel
 
                 var line = lines[task.Line - 1];
                 var ending = line.EndsWith('\r') ? "\r" : "";
-                lines[task.Line - 1] = TaskMarkers.Toggle(line.TrimEnd('\r')) + ending;
+                lines[task.Line - 1] = string.Join(ending + "\n", change(line.TrimEnd('\r'))) + ending;
+                History?.Record(task.Path, loaded.Text, Core.History.VersionReason.BeforeEditing);
                 TextDocumentFile.Save(task.Path, string.Join('\n', lines), loaded.Format);
                 _search?.Refresh(task.Path);
             }

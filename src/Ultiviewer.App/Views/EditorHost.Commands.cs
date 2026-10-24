@@ -414,7 +414,7 @@ public partial class EditorHost
             {
                 var line = document.GetLineByNumber(number);
                 var text = document.GetText(line);
-                var cycled = TaskMarkers.Cycle(text);
+                var cycled = string.Join(NewLineAt(number), TaskCompletion.Cycle(text, DateOnly.FromDateTime(DateTime.Today)));
                 if (cycled != text)
                 {
                     document.Replace(line.Offset, line.Length, cycled);

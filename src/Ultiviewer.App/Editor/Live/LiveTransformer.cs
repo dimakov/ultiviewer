@@ -139,6 +139,13 @@ internal sealed class LiveTransformer(LivePreview owner) : DocumentColorizingTra
                         e.TextRunProperties.SetForegroundBrush(styles.Faint);
                     });
                     break;
+                case LiveStyle.TaskMeta:
+                    ChangeLinePart(start, end, e =>
+                    {
+                        e.TextRunProperties.SetForegroundBrush(styles.Faint);
+                        Resize(e, 0.88);
+                    });
+                    break;
                 case LiveStyle.TaskDone:
                     ChangeLinePart(start, end, e =>
                     {

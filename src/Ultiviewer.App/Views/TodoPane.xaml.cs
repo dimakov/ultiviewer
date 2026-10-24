@@ -11,6 +11,14 @@ public partial class TodoPane : UserControl
     public TodoPane()
     {
         InitializeComponent();
+        DataContextChanged += (_, _) =>
+        {
+            // Overdue, Today, Upcoming… (the view model sorts tasks by group first).
+            if (DataContext is MainViewModel vm && System.Windows.Data.CollectionViewSource.GetDefaultView(vm.Tasks) is { } view && view.GroupDescriptions.Count == 0)
+            {
+                view.GroupDescriptions.Add(new System.Windows.Data.PropertyGroupDescription(nameof(TaskEntry.Group)));
+            }
+        };
         IsVisibleChanged += (_, _) =>
         {
             if (IsVisible && DataContext is MainViewModel vm)
