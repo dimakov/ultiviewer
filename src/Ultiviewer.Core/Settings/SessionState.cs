@@ -48,6 +48,22 @@ public sealed class SessionState
 
     public int ActiveTab { get; set; } = -1;
 
+    /// <summary>Two editors: the second one's tabs (a document may be in both lists).</summary>
+    public bool IsSplit { get; set; }
+
+    /// <summary>Side by side (true) or one above the other.</summary>
+    public bool SplitVertical { get; set; } = true;
+
+    /// <summary>Share of the first editor, 0–1.</summary>
+    public double SplitRatio { get; set; } = 0.5;
+
+    public List<OpenTabState> SplitTabs { get; set; } = [];
+
+    public int SplitActiveTab { get; set; } = -1;
+
+    /// <summary>0 = first editor, 1 = second.</summary>
+    public int FocusedGroup { get; set; }
+
     public List<string> RecentPages { get; set; } = [];
 
     public List<string> FavoritePages { get; set; } = [];

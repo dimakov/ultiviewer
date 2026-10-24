@@ -13,6 +13,9 @@ public static class JsonFileStore
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         WriteIndented = true,
         Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) },
+
+        // Unset positions are NaN (window placement before the first save); they must not stop a save.
+        NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals,
     };
 
     public static T Load<T>(string path) where T : new()
