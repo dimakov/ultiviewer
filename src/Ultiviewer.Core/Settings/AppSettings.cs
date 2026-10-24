@@ -49,6 +49,12 @@ public sealed class AppSettings
     /// <summary>The "Basic Text" formatting toolbar above Markdown documents.</summary>
     public bool ShowFormatBar { get; set; } = true;
 
+    /// <summary>
+    /// Text direction of documents without their own choice: Auto reads right to left when most lines are Hebrew,
+    /// Arabic…; a fixed direction applies to every such document.
+    /// </summary>
+    public Text.TextDirectionMode TextDirection { get; set; } = Text.TextDirectionMode.Auto;
+
     /// <summary>Formatted text pasted from browsers and Word becomes Markdown (Ctrl+Alt+V still pastes plain text).</summary>
     public bool PasteHtmlAsMarkdown { get; set; } = true;
 

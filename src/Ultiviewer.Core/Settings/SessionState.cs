@@ -73,6 +73,9 @@ public sealed class SessionState
 
     public List<string> RecentSearches { get; set; } = [];
 
+    /// <summary>Text direction chosen for a file (Ctrl+Alt+R / Ctrl+Alt+L); files not listed follow the setting.</summary>
+    public Dictionary<string, Text.TextDirectionMode> TextDirections { get; set; } = [];
+
     /// <summary>Search results shown as a table (with property columns) instead of matching lines.</summary>
     public bool SearchAsTable { get; set; }
 

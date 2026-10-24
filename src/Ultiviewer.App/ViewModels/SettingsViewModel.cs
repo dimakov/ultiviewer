@@ -27,6 +27,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         _highlightCurrentLine = settings.HighlightCurrentLine;
         _showFormatBar = settings.ShowFormatBar;
         _pasteHtmlAsMarkdown = settings.PasteHtmlAsMarkdown;
+        _textDirection = settings.TextDirection;
         _autosaveNotebookPages = settings.AutosaveNotebookPages;
         _autosaveExternalFiles = settings.AutosaveExternalFiles;
         _autosaveDelayMs = settings.AutosaveDelayMs;
@@ -147,6 +148,16 @@ public sealed partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private bool _pasteHtmlAsMarkdown;
 
+    public IReadOnlyList<KeyValuePair<Core.Text.TextDirectionMode, string>> TextDirections { get; } =
+    [
+        new(Core.Text.TextDirectionMode.Auto, "Automatic (right to left when most lines are Hebrew or Arabic)"),
+        new(Core.Text.TextDirectionMode.LeftToRight, "Left to right"),
+        new(Core.Text.TextDirectionMode.RightToLeft, "Right to left"),
+    ];
+
+    [ObservableProperty]
+    private Core.Text.TextDirectionMode _textDirection;
+
     [ObservableProperty]
     private bool _autosaveNotebookPages;
 
@@ -220,6 +231,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         settings.HighlightCurrentLine = HighlightCurrentLine;
         settings.ShowFormatBar = ShowFormatBar;
         settings.PasteHtmlAsMarkdown = PasteHtmlAsMarkdown;
+        settings.TextDirection = TextDirection;
         settings.AutosaveNotebookPages = AutosaveNotebookPages;
         settings.AutosaveExternalFiles = AutosaveExternalFiles;
         settings.AutosaveDelayMs = Math.Clamp(AutosaveDelayMs, 200, 60000);

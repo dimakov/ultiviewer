@@ -292,6 +292,7 @@ public sealed partial class MainViewModel
 
     private void Attach(DocumentTabViewModel tab)
     {
+        InitializeDirection(tab);
         tab.Document.TextChanged += (_, _) => OnTabTextChanged(tab);
         tab.PropertyChanged += (_, e) =>
         {

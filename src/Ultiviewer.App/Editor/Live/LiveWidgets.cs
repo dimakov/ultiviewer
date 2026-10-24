@@ -7,6 +7,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Ultiviewer.Core.Markdown;
+using Ultiviewer.Core.Text;
 
 namespace Ultiviewer.App.Editor.Live;
 
@@ -46,6 +47,7 @@ internal static partial class LiveWidgets
             var natural = source is BitmapImage { IsDownloading: true } ? maxWidth : source.Width;
             content = new Image
             {
+                FlowDirection = FlowDirection.LeftToRight, // pictures are never mirrored in right-to-left notes
                 Source = source,
                 Stretch = Stretch.Uniform,
                 Width = Math.Max(16, Math.Min(width ?? natural, maxWidth)),
@@ -179,9 +181,12 @@ internal static partial class LiveWidgets
             }
         }
 
+        // A table reads in its own direction: Hebrew tables put the first column on the right.
+        var cellText = string.Join("\n", rows.Select(row => string.Join(" ", row.Select(cell => cell.Text))));
         return new Border
         {
             Child = grid,
+            FlowDirection = BidiText.Detect(cellText) == true ? FlowDirection.RightToLeft : FlowDirection.LeftToRight,
             BorderBrush = styles.Border,
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(4),

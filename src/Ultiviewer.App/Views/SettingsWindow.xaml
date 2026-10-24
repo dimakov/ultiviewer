@@ -132,6 +132,10 @@
                         <TextBox Width="90" Margin="8,0,0,0" Text="{Binding TimeFormat, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Time format" />
                         <TextBlock Margin="12,0,0,0" VerticalAlignment="Center" Opacity="0.7" Text="{Binding DatePreview}" />
                     </StackPanel>
+                    <TextBlock Grid.Row="3" Margin="0,8,12,0" Style="{StaticResource Label}" Text="Text direction" />
+                    <ComboBox Grid.Row="3" Grid.Column="1" Margin="0,8,0,0" ItemsSource="{Binding TextDirections}" DisplayMemberPath="Value" SelectedValuePath="Key"
+                              SelectedValue="{Binding TextDirection}" AutomationProperties.Name="Text direction"
+                              ToolTip="For documents without their own choice. Ctrl+Alt+R / Ctrl+Alt+L (or Ctrl+Right Shift / Ctrl+Left Shift) choose per file." />
                 </Grid>
                 <CheckBox Margin="0,10,0,0" Content="Write a UTF-8 byte-order mark (BOM) in new files" IsChecked="{Binding DefaultUtf8Bom}" />
 

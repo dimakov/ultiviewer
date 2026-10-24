@@ -429,6 +429,29 @@ public partial class MainWindow : Window
         ShowMenu(menu, (Button)sender);
     }
 
+    private void OnDirectionClick(object sender, RoutedEventArgs e)
+    {
+        if (_vm.ActiveTab is not { } tab)
+        {
+            return;
+        }
+
+        var menu = new ContextMenu();
+        foreach (var (mode, header) in new[]
+        {
+            (Core.Text.TextDirectionMode.Auto, "_Automatic (from the text)"),
+            (Core.Text.TextDirectionMode.RightToLeft, "_Right to left"),
+            (Core.Text.TextDirectionMode.LeftToRight, "_Left to right"),
+        })
+        {
+            var item = new MenuItem { Header = header, IsCheckable = true, IsChecked = tab.DirectionMode == mode };
+            item.Click += (_, _) => _vm.SetDirection(tab, mode);
+            menu.Items.Add(item);
+        }
+
+        ShowMenu(menu, (Button)sender);
+    }
+
     // ---- Go and template menus (built when opened) ----
 
     private void OnGoMenuOpened(object sender, RoutedEventArgs e)

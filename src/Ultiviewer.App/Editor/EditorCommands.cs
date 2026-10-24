@@ -92,6 +92,13 @@ public static class EditorCommands
     /// <summary>Pastes clipboard text as is (no table conversion).</summary>
     public static RoutedUICommand PasteAsText { get; } = Create("Paste as plain text", nameof(PasteAsText), Key.V, ModifierKeys.Control | ModifierKeys.Alt);
 
+    // Text direction (Hebrew, Arabic). Ctrl+Right Shift / Ctrl+Left Shift work too, as in Notepad and Word.
+    public static RoutedUICommand RightToLeft { get; } = Create("Right to left", nameof(RightToLeft), Key.R, ModifierKeys.Control | ModifierKeys.Alt);
+
+    public static RoutedUICommand LeftToRight { get; } = Create("Left to right", nameof(LeftToRight), Key.L, ModifierKeys.Control | ModifierKeys.Alt);
+
+    public static RoutedUICommand AutomaticDirection { get; } = Create("Automatic direction (from the text)", nameof(AutomaticDirection));
+
     /// <summary>Commands that only apply to Markdown documents; their shortcuts win there (Ctrl+U underlines in notes, lowercases elsewhere).</summary>
     public static IReadOnlySet<RoutedUICommand> MarkdownOnly { get; } = new HashSet<RoutedUICommand>
     {

@@ -76,6 +76,7 @@ internal sealed class TaskBoxVisual : FrameworkElement
         _size = Math.Round(fontSize * 1.05);
         _toggle = toggle;
         Cursor = Cursors.Hand;
+        FlowDirection = FlowDirection.LeftToRight; // the check mark isn't mirrored in right-to-left notes
         Margin = new Thickness(0, 0, 2, 0);
         ToolTip = isChecked ? "Mark as not done" : "Mark as done";
         TextBlock.SetBaselineOffset(this, _size * 0.88);

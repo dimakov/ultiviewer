@@ -62,6 +62,7 @@ public partial class EditorHost : UserControl
         InitializeLive();
         InitializeTables();
         InitializeFolding();
+        InitializeBidi();
         SplitterMoved += SavePreviewRatio;
     }
 
@@ -205,12 +206,14 @@ public partial class EditorHost : UserControl
             Editor.Document = new TextDocument();
             InstallFolding();
             Editor.SyntaxHighlighting = null;
+            ApplyDirection();
             ApplyViewMode();
             TabShown?.Invoke(null);
             return;
         }
 
         tab.PropertyChanged += OnTabPropertyChanged;
+        ApplyDirection();
         Editor.Document = tab.Document;
         InstallFolding();
         ApplyHighlighting();
@@ -234,6 +237,10 @@ public partial class EditorHost : UserControl
         {
             ApplyViewMode();
             UpdateFormatBar();
+        }
+        else if (e.PropertyName is nameof(DocumentTabViewModel.IsRightToLeft))
+        {
+            ApplyDirection();
         }
     }
 

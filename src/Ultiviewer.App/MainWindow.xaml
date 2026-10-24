@@ -140,6 +140,12 @@
                     <MenuItem Command="editor:EditorCommands.TableFormat" />
                 </MenuItem>
                 <MenuItem Command="editor:EditorCommands.HorizontalRule" />
+                <Separator />
+                <MenuItem Header="Text _direction">
+                    <MenuItem Command="editor:EditorCommands.RightToLeft" />
+                    <MenuItem Command="editor:EditorCommands.LeftToRight" />
+                    <MenuItem Command="editor:EditorCommands.AutomaticDirection" />
+                </MenuItem>
             </MenuItem>
             <MenuItem Header="_Insert">
                 <MenuItem Command="editor:EditorCommands.ToggleTask" />
@@ -233,6 +239,8 @@
                     <Button x:Name="EncodingButton" Style="{StaticResource StatusButton}" Content="{Binding ActiveTab.Format.EncodingName}" ToolTip="Encoding" Click="OnEncodingClick" />
                     <Button x:Name="LineEndingButton" Style="{StaticResource StatusButton}" Content="{Binding ActiveTab.Format.LineEndingName}" ToolTip="Line endings" Click="OnLineEndingClick" />
                     <Button x:Name="LanguageButton" Style="{StaticResource StatusButton}" Content="{Binding ActiveTab.Language}" ToolTip="Language (syntax highlighting)" Click="OnLanguageClick" />
+                    <Button x:Name="DirectionButton" Style="{StaticResource StatusButton}" Content="{Binding ActiveTab.DirectionLabel}" ToolTip="{Binding ActiveTab.DirectionToolTip}"
+                            AutomationProperties.Name="Text direction" Click="OnDirectionClick" />
                 </StackPanel>
             </StatusBarItem>
             <StatusBarItem>

@@ -122,6 +122,8 @@ public sealed partial class MainViewModel
             UpdateNotebookPageFlag(tab); // autosave rules may have changed
         }
 
+        UpdateAllDirections();
+
         EditorSettingsChanged?.Invoke();
         CaptureSettingsChanged?.Invoke();
         if (_search is { } search)

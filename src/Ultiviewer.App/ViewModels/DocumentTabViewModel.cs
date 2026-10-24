@@ -74,6 +74,22 @@ public sealed partial class DocumentTabViewModel : ObservableObject
     [ObservableProperty]
     private string? _saveError;
 
+    /// <summary>The direction chosen for this document; Auto follows the setting and the text.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DirectionToolTip))]
+    private Core.Text.TextDirectionMode _directionMode;
+
+    /// <summary>Whether the editor shows this document right to left (Hebrew, Arabic…).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DirectionLabel), nameof(DirectionToolTip))]
+    private bool _isRightToLeft;
+
+    public string DirectionLabel => IsRightToLeft ? "RTL" : "LTR";
+
+    public string DirectionToolTip => (IsRightToLeft ? "Right to left" : "Left to right")
+        + (DirectionMode == Core.Text.TextDirectionMode.Auto ? " (automatic)" : " (chosen for this file)")
+        + "\nCtrl+Alt+R / Ctrl+Right Shift: right to left · Ctrl+Alt+L / Ctrl+Left Shift: left to right";
+
     public bool IsUntitled => Path is null;
 
     public string Title => Path is null
