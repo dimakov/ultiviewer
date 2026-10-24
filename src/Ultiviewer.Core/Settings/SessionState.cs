@@ -73,6 +73,9 @@ public sealed class SessionState
 
     public List<string> RecentSearches { get; set; } = [];
 
+    /// <summary>Command palette entries run lately, newest first (their menu path, e.g. "View › Word wrap").</summary>
+    public List<string> RecentCommands { get; set; } = [];
+
     /// <summary>Reminders already shown ("path|yyyy-MM-dd HH:mm|text"), so a restart doesn't repeat them.</summary>
     public List<string> ShownReminders { get; set; } = [];
 
