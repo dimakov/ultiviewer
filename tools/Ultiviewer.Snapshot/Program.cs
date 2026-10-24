@@ -72,6 +72,7 @@ internal static class Program
             foreach (var step in script.Steps)
             {
                 dialogs.ConfirmAnswer = step.Confirm ?? dialogs.ConfirmAnswer;
+                dialogs.PromptAnswer = step.Prompt ?? dialogs.PromptAnswer;
                 Run(step, vm, window);
             }
         }
@@ -217,6 +218,29 @@ internal static class Program
             }
         }
 
+        if (step.Table is { } table)
+        {
+            vm.SearchAsTable = table;
+        }
+
+        if (step.SaveSearch)
+        {
+            vm.SaveSearchCommand.Execute(null);
+        }
+
+        if (step.RunSaved is { } savedName)
+        {
+            vm.RunSavedSearchCommand.Execute(vm.SavedSearches.Single(s => s.Name == savedName));
+            Pump(1500);
+            Console.WriteLine($"ran saved search '{savedName}': {vm.SearchText} [{vm.SearchScope}] table={vm.SearchAsTable} · {vm.SearchStatus}");
+        }
+
+        if (step.SortBy is { } sortKey)
+        {
+            window.SearchView.SortBy(sortKey);
+            Pump(200);
+        }
+
         if (step.Export is { } export)
         {
             var request = vm.Primary.ActiveTab is null ? null : new ExportRequest(vm.ActiveTab!.Title,
@@ -339,6 +363,10 @@ internal static class Program
                     + Environment.NewLine + "  links: " + string.Join(" | ", vm.OutgoingLinks.Select(l => $"{l.Title} ({l.Location}, {l.State})"))
                     + Environment.NewLine + "  mentions: " + string.Join(" | ", vm.UnlinkedMentions.Select(l => $"{l.Title}:{l.Line} {l.Text}")),
                 "tasks" => string.Join(Environment.NewLine, vm.Tasks.Select(t => $"  [{t.Group}] {t.Description} | {t.DueLabel} {t.Extras}")),
+                "table" => "  columns: " + string.Join(", ", vm.TableColumns) + Environment.NewLine
+                    + string.Join(Environment.NewLine, window.SearchView.TableRows.Select(r => "  " + r.Title + " | " + string.Join(" | ", vm.TableColumns.Select(c => r.Properties[c])) + " | " + r.MatchCount)),
+                "saved" => string.Join(Environment.NewLine, vm.SavedSearches.Select(s => $"  {s.Name}: {s.Query} scope={s.ScopePath ?? "all"} table={s.ShowAsTable}"))
+                    + Environment.NewLine + "  settings: " + string.Join(", ", vm.Settings.SavedSearches.Select(s => s.Name)),
                 "groups" => $"split={vm.IsSplit} vertical={vm.SplitVertical} focused={vm.FocusedGroup.Index} "
                     + $"first=[{string.Join(", ", vm.Primary.Tabs.Select(t => (t == vm.Primary.ActiveTab ? "*" : "") + t.Title + ":" + vm.Primary.ModeOf(t)))}] "
                     + $"second=[{string.Join(", ", vm.Secondary.Tabs.Select(t => (t == vm.Secondary.ActiveTab ? "*" : "") + t.Title + ":" + vm.Secondary.ModeOf(t)))}] active={vm.ActiveTab?.Title}",
@@ -596,7 +624,13 @@ internal sealed class ScriptDialogs : IDialogService
 
     public string? PickSaveFile(string title, string fileName, string filter) => null;
 
-    public string? Prompt(string title, string label, string initial = "", Func<string, string?>? validate = null) => null;
+    public string? PromptAnswer { get; set; }
+
+    public string? Prompt(string title, string label, string initial = "", Func<string, string?>? validate = null)
+    {
+        Console.WriteLine($"prompt ({PromptAnswer ?? "cancel"}): {title} [{initial}]");
+        return PromptAnswer;
+    }
 }
 
 /// <summary>A snapshot script: where state lives, the window, the file to open and the steps to run.</summary>
@@ -676,6 +710,21 @@ internal sealed class Step
 
     /// <summary>Renders the quick-note window (off-screen, not activated) to this PNG.</summary>
     public string? CaptureWindow { get; set; }
+
+    /// <summary>Shows search results as a table (true) or lines (false).</summary>
+    public bool? Table { get; set; }
+
+    /// <summary>Saves the current search; the name comes from <see cref="Prompt"/>.</summary>
+    public bool SaveSearch { get; set; }
+
+    /// <summary>The answer to text prompts from this step on.</summary>
+    public string? Prompt { get; set; }
+
+    /// <summary>Runs the saved search with this name.</summary>
+    public string? RunSaved { get; set; }
+
+    /// <summary>Sorts the results table by a column key ("title", "modified", "prop:status"…); again reverses.</summary>
+    public string? SortBy { get; set; }
 
     /// <summary>Shortcut changes as made in Settings (command name → gesture; "" removes, "default" restores).</summary>
     public Dictionary<string, string>? Shortcuts { get; set; }
