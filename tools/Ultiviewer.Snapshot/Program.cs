@@ -196,6 +196,17 @@ internal static class Program
             Pump(300);
         }
 
+        if (step.Search is { } query)
+        {
+            vm.IsSearchPanelOpen = true;
+            vm.SearchText = query;
+            Pump(1500);
+            foreach (var page in vm.SearchResults)
+            {
+                Console.WriteLine($"  {page.Title}{(page.IsAttachment ? " (attachment)" : "")}: " + string.Join(" | ", page.Lines.Select(l => $"{l.LineLabel} {string.Concat(l.Segments.Select(s => s.IsMatch ? "[" + s.Text + "]" : s.Text))}")));
+            }
+        }
+
         if (step.Export is { } export)
         {
             var request = vm.Primary.ActiveTab is null ? null : new ExportRequest(vm.ActiveTab!.Title,
@@ -536,6 +547,9 @@ internal sealed class Step
     public string? Capture { get; set; }
 
     public Ultiviewer.Core.Capture.CaptureTarget CaptureTarget { get; set; }
+
+    /// <summary>Runs a search and prints the results.</summary>
+    public string? Search { get; set; }
 
     /// <summary>Exports the active page through the export window: writes this path + ".html" and + ".pdf".</summary>
     public string? Export { get; set; }
