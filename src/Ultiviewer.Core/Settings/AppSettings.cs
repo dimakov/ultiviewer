@@ -105,6 +105,9 @@ public sealed class AppSettings
     /// <summary>Command name → key gesture text (for example "Ctrl+Alt+N"), overriding the defaults.</summary>
     public Dictionary<string, string> Shortcuts { get; set; } = [];
 
+    /// <summary>Named searches shown above the notebook tree, in the user's order.</summary>
+    public List<SavedSearch> SavedSearches { get; set; } = [];
+
     public void Save() => JsonFileStore.Save(AppPaths.SettingsFile, this);
 
     public static AppSettings Load() => JsonFileStore.Load<AppSettings>(AppPaths.SettingsFile);

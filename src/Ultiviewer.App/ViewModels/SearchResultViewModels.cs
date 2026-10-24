@@ -104,7 +104,16 @@ public sealed partial class SearchPageViewModel : ObservableObject
             .Select(g => new SearchLineViewModel(result.Path, g.Key, g.First().LineText, g.Select(h => (h.Column, h.Length)).ToList(), result.IsAttachment))
             .ToList();
         MatchCount = Math.Max(result.Hits.Count, TitleMatched ? 1 : 0);
+        Properties = new PropertyBag(result.Properties);
+        Modified = result.Modified;
     }
+
+    /// <summary>Property values by key, for the results table.</summary>
+    public PropertyBag Properties { get; }
+
+    public DateTime Modified { get; }
+
+    public string ModifiedLabel => Modified == DateTime.MinValue ? "" : Modified.ToString("g", System.Globalization.CultureInfo.CurrentCulture);
 
     public string Path { get; }
 
@@ -132,6 +141,18 @@ public sealed partial class SearchPageViewModel : ObservableObject
     private bool _isExpanded = true;
 }
 
+/// <summary>A page's properties by key ("" when missing); a list property's values are joined with ", ".</summary>
+public sealed class PropertyBag(IReadOnlyList<PageProperty> properties)
+{
+    private readonly Dictionary<string, string> _values = properties
+        .GroupBy(p => p.Key, StringComparer.OrdinalIgnoreCase)
+        .ToDictionary(g => g.Key, g => string.Join(", ", g.Select(p => p.Value)), StringComparer.OrdinalIgnoreCase);
+
+    public string this[string key] => _values.GetValueOrDefault(key) ?? "";
+
+    public IEnumerable<string> Keys => _values.Keys;
+}
+
 /// <summary>An entry of the Ctrl+E page switcher.</summary>
 public sealed record QuickOpenItem(string Path, string Title, string Location, int Score)
 {
@@ -144,9 +165,12 @@ public enum SearchScopeOption
     ThisNotebook,
     ThisSection,
     ThisPage,
+
+    /// <summary>A fixed notebook, folder or page (from a saved search).</summary>
+    Fixed,
 }
 
-public sealed record SearchScopeChoice(SearchScopeOption Value, string Label)
+public sealed record SearchScopeChoice(SearchScopeOption Value, string Label, string? Path = null)
 {
     public override string ToString() => Label;
 }

@@ -17,6 +17,14 @@
                     ToolTip="Close search (Esc)" AutomationProperties.Name="Close search" Command="{Binding CloseSearchCommand}" />
             <TextBlock DockPanel.Dock="Right" MinWidth="170" Margin="10,0,6,0" VerticalAlignment="Center" Opacity="0.75"
                        Text="{Binding SearchStatus}" TextTrimming="CharacterEllipsis" />
+            <ToggleButton DockPanel.Dock="Right" Height="30" MinWidth="0" MinHeight="0" Padding="8,0" Margin="4,0,0,0"
+                          Focusable="False" Content="Table"
+                          ToolTip="Show the results as a table with page properties (front matter and key:: value fields)"
+                          AutomationProperties.Name="Show results as a table" IsChecked="{Binding SearchAsTable}" />
+            <Button DockPanel.Dock="Right" Width="32" Height="30" MinWidth="0" MinHeight="0" Padding="0" Margin="4,0,0,0"
+                    Focusable="False" FontFamily="{StaticResource IconFont}" Content="&#xE734;"
+                    ToolTip="Save this search (it appears above the notebooks)" AutomationProperties.Name="Save search"
+                    Command="{Binding SaveSearchCommand}" />
             <ToggleButton DockPanel.Dock="Right" Width="32" Height="30" MinWidth="0" MinHeight="0" Padding="0" Margin="4,0,0,0"
                           Focusable="False" FontFamily="{StaticResource IconFont}" Content="&#xE8AB;"
                           ToolTip="Replace in the listed pages" AutomationProperties.Name="Replace in files"
@@ -26,7 +34,7 @@
             <TextBlock DockPanel.Dock="Left" Margin="0,0,8,0" VerticalAlignment="Center" FontFamily="{StaticResource IconFont}" Text="&#xE721;" />
             <ComboBox x:Name="QueryBox" IsEditable="True" IsTextSearchEnabled="False"
                       AutomationProperties.Name="Search notebooks"
-                      ToolTip="Words (all must appear) · &quot;exact phrase&quot; · a OR b · -exclude · #tag · is:todo / is:done"
+                      ToolTip="Words (all must appear) · &quot;exact phrase&quot; · a OR b · -exclude · #tag · is:todo / is:done · status:done · priority:&gt;=2 · due:&lt;2026-12-01 · project:*"
                       Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                       ItemsSource="{Binding RecentSearches}"
                       PreviewKeyDown="OnQueryKeyDown" />
@@ -47,7 +55,25 @@
                     Command="{Binding ReplaceInResultsCommand}" />
         </DockPanel>
 
+        <ListView x:Name="ResultsTable" Grid.Row="2" Margin="4,0,4,4" BorderThickness="0" Background="Transparent"
+                  AutomationProperties.Name="Search results table" SelectionMode="Single"
+                  Visibility="{Binding SearchAsTable, Converter={StaticResource BoolToVisibility}}"
+                  VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                  KeyDown="OnTableKeyDown" PreviewMouseLeftButtonUp="OnTableMouseUp">
+            <ListView.ItemContainerStyle>
+                <Style TargetType="ListViewItem" BasedOn="{StaticResource {x:Static GridView.GridViewItemContainerStyleKey}}">
+                    <Setter Property="MinHeight" Value="0" />
+                    <Setter Property="Padding" Value="4,3" />
+                    <Setter Property="AutomationProperties.Name" Value="{Binding Title}" />
+                </Style>
+            </ListView.ItemContainerStyle>
+            <ListView.View>
+                <GridView x:Name="TableView" />
+            </ListView.View>
+        </ListView>
+
         <TreeView x:Name="Results" Grid.Row="2" Margin="4,0,4,4" BorderThickness="0" Background="Transparent"
+                  Visibility="{Binding SearchAsTable, Converter={StaticResource InverseBoolToVisibility}}"
                   ItemsSource="{Binding SearchResults}" AutomationProperties.Name="Search results"
                   VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
                   KeyDown="OnResultsKeyDown" PreviewMouseLeftButtonUp="OnResultsMouseUp">

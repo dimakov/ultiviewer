@@ -73,6 +73,11 @@ public sealed class SessionState
 
     public List<string> RecentSearches { get; set; } = [];
 
+    /// <summary>Search results shown as a table (with property columns) instead of matching lines.</summary>
+    public bool SearchAsTable { get; set; }
+
+    public bool SavedSearchesExpanded { get; set; } = true;
+
     /// <summary>Command palette entries run lately, newest first (their menu path, e.g. "View › Word wrap").</summary>
     public List<string> RecentCommands { get; set; } = [];
 

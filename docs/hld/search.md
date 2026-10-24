@@ -5,7 +5,8 @@ Design background: [research/onenote-search.md](../../research/onenote-search.md
 ## What it does
 
 - **Find in notebooks** (Ctrl+Shift+F, prefilled with the editor selection): a panel under the editor that searches as you type (250 ms debounce), scoped to all notebooks, this notebook, this section or this page. Results are grouped by page with every matching line and the matches highlighted; clicking a line opens the page with the match selected. Recent searches are kept in the session.
-- **Query syntax**: words (all must appear somewhere on the page, title included), `"exact phrase"`, `a OR b`, `-exclude`, `#tag` (also matches `#tag/child`), `is:todo`, `is:done`, `is:task`.
+- **Query syntax**: words (all must appear somewhere on the page, title included), `"exact phrase"`, `a OR b`, `-exclude`, `#tag` (also matches `#tag/child`), `is:todo`, `is:done`, `is:task`, and page properties such as `status:done`, `priority:>=2` or `project:*` (see [properties-and-saved-searches.md](properties-and-saved-searches.md)).
+- **Results** as matching lines grouped by page, or as a sortable table with property columns; searches can be saved by name.
 - **Matching**: case- and accent-insensitive (Hebrew points too). Terms of 3+ characters match anywhere, including inside words — so `מטבח` finds `במטבח` and `parse` finds `ParseQuery`; shorter terms match at word starts.
 - **Go to page** (Ctrl+E): fuzzy title match over all pages and open files; recent pages first when the box is empty.
 - Unsaved edits are searched (the open buffer wins over the file), and open files outside notebooks are searched too when the scope is "All notebooks".
@@ -27,10 +28,11 @@ If an index can't be opened or queried, that notebook falls back to scanning all
 
 | File | Responsibility |
 |---|---|
-| `Core/Search/SearchQuery.cs` | Tokenizer/parser → `AndNode`/`OrNode`/`NotNode`/`TermNode`/`TagNode`/`TaskNode`. |
+| `Core/Search/SearchQuery.cs` | Tokenizer/parser → `AndNode`/`OrNode`/`NotNode`/`TermNode`/`TagNode`/`TaskNode`/`PropertyNode`. |
+| `Core/Search/PropertyValues.cs` | How property values compare (numbers numerically, otherwise folded text). |
 | `Core/Search/TextFolding.cs` | Lower-case + strip combining marks, with a map back to original character positions. |
 | `Core/Search/TextMatcher.cs` | Page-level evaluation (title + lines + facts) and per-line highlight ranges. |
-| `Core/Search/PageFacts.cs` | `#tags` (inline, front matter `tags:`), task items; code is ignored. |
+| `Core/Search/PageFacts.cs` | `#tags` (inline, front matter `tags:`), task items, properties; code is ignored. |
 | `Core/Search/MarkdownBlocks.cs` | Paragraph / heading / list item / table / fenced block splitting with start lines. |
 | `Core/Search/NotebookIndex.cs` | SQLite schema, incremental indexing, SQL compiler, tags and tasks queries. |
 | `Core/Search/SearchService.cs` | Index lifecycle per notebook, the four-step search, fallback. |
@@ -43,12 +45,13 @@ If an index can't be opened or queried, that notebook falls back to scanning all
 One SQLite file per notebook: `%LOCALAPPDATA%\Ultiviewer\Index\<first 16 hex of SHA-256(upper-case root path)>.db` (WAL mode). It is a cache: deleting it is always safe; a schema-version or root mismatch, or a corrupt file, rebuilds it.
 
 ```sql
-Meta(key, value)                                   -- schema = 2, root = <notebook path>
+Meta(key, value)                                   -- schema = 3, root = <notebook path>
 Pages(id, path UNIQUE NOCASE, title, title_folded, mtime, size, hash, kind)   -- path relative, '/' separators; kind 1 = attachment
 Blocks(id, page_id, line, text)                    -- text is FOLDED (TextFolding), one row per block (per page for attachments)
 AttachmentPages(page_id, page, text)               -- original text of attachment pages (see attachment-search.md)
 Tags(page_id, line, tag)                           -- lower case, without '#'
 Tasks(page_id, line, done, text)
+Properties(page_id, line, key, value_folded, num)  -- key lower case; num = the value as a number, or NULL
 BlocksTri / TitlesTri    fts5 trigram, external content   -- terms >= 3 chars: substring match
 BlocksWords / TitlesWords fts5 unicode61, prefix='1 2'     -- terms < 3 chars: word-prefix match
 triggers keep the FTS tables in sync with Blocks/Pages
@@ -64,6 +67,7 @@ Query compilation examples (values are bound parameters, never concatenated):
 | term < 3 | same over `BlocksWords`/`TitlesWords` with `"te"*` |
 | `#tag` | `id IN (SELECT page_id FROM Tags WHERE tag = $t OR tag LIKE $t/% ESCAPE '\')` |
 | `is:todo` | `id IN (SELECT page_id FROM Tasks WHERE done = 0)` |
+| `priority:>=2` | `id IN (SELECT page_id FROM Properties WHERE key = $k AND (num >= $n OR (num IS NULL AND value_folded >= $v)))` |
 | AND / OR / NOT | `( … AND … )`, `( … OR … )`, `NOT ( … )` |
 | scope | `path LIKE 'Section/%'` or `path = 'Section/Page.md'` |
 

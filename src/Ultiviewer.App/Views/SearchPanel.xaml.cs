@@ -11,6 +11,7 @@ public partial class SearchPanel : UserControl
     public SearchPanel()
     {
         InitializeComponent();
+        InitializeTable();
     }
 
     private MainViewModel Vm => (MainViewModel)DataContext;

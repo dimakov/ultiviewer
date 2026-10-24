@@ -27,7 +27,7 @@ public sealed partial class MainViewModel
 
     public ObservableCollection<string> RecentSearches { get; } = [];
 
-    public IReadOnlyList<SearchScopeChoice> SearchScopes { get; } =
+    public ObservableCollection<SearchScopeChoice> SearchScopes { get; } =
     [
         new(SearchScopeOption.AllNotebooks, "All notebooks"),
         new(SearchScopeOption.ThisNotebook, "This notebook"),
@@ -58,6 +58,8 @@ public sealed partial class MainViewModel
     private void InitializeSearch()
     {
         SearchScope = SearchScopes[0];
+        SearchAsTable = Session.SearchAsTable;
+        InitializeSavedSearches();
         foreach (var recent in Session.RecentSearches.Take(20))
         {
             RecentSearches.Add(recent);
@@ -232,6 +234,7 @@ public sealed partial class MainViewModel
             return;
         }
 
+        UpdateTableColumns(text);
         SearchStatus = pages == 0
             ? $"No matches · {stopwatch.ElapsedMilliseconds} ms"
             : $"{pages} page{(pages == 1 ? "" : "s")}, {matches} match{(matches == 1 ? "" : "es")} · {stopwatch.ElapsedMilliseconds} ms";
@@ -249,6 +252,7 @@ public sealed partial class MainViewModel
             SearchScopeOption.ThisNotebook when context is not null => NotebookOf(context)?.Path,
             SearchScopeOption.ThisSection when context is not null => File.Exists(context) ? Path.GetDirectoryName(context) : context,
             SearchScopeOption.ThisPage when ActiveTab?.Path is { } page => page,
+            SearchScopeOption.Fixed => SearchScope.Path,
             _ => null,
         };
     }

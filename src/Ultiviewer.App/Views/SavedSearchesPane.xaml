@@ -1,0 +1,36 @@
+<UserControl x:Class="Ultiviewer.App.Views.SavedSearchesPane"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Visibility="{Binding HasSavedSearches, Converter={StaticResource BoolToVisibility}}">
+    <Expander Margin="0,4,0,2" IsExpanded="{Binding SavedSearchesExpanded}" Padding="0"
+              AutomationProperties.Name="Saved searches">
+        <Expander.Header>
+            <TextBlock FontWeight="SemiBold" Text="Saved searches" />
+        </Expander.Header>
+        <ListBox x:Name="List" MaxHeight="180" BorderThickness="0" Background="Transparent"
+                 ItemsSource="{Binding SavedSearches}" AutomationProperties.Name="Saved searches"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                 PreviewMouseLeftButtonUp="OnClicked" KeyDown="OnKeyDown" ContextMenuOpening="OnContextMenuOpening">
+            <ListBox.ContextMenu>
+                <ContextMenu />
+            </ListBox.ContextMenu>
+            <ListBox.ItemContainerStyle>
+                <Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
+                    <Setter Property="MinHeight" Value="0" />
+                    <Setter Property="Padding" Value="8,3" />
+                    <Setter Property="ToolTip" Value="{Binding Query}" />
+                    <Setter Property="AutomationProperties.Name" Value="{Binding Name}" />
+                </Style>
+            </ListBox.ItemContainerStyle>
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Width="16" Margin="0,0,8,0" VerticalAlignment="Center" FontFamily="{StaticResource IconFont}" FontSize="13"
+                                   Opacity="0.75" Text="&#xE721;" />
+                        <TextBlock VerticalAlignment="Center" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+    </Expander>
+</UserControl>
