@@ -276,6 +276,16 @@ internal static class Program
             quick.Close();
         }
 
+        if (step.Shortcuts is { } shortcuts)
+        {
+            ChangeShortcuts(vm, window, shortcuts, step.ShortcutsShot);
+        }
+
+        if (step.Palette is { } palette)
+        {
+            ShowPalette(vm, window, palette);
+        }
+
         if (step.History is { } history && vm.ActiveTab is { } historyTab && vm.History is { } store)
         {
             ShowHistory(vm, historyTab, store, history);
@@ -347,6 +357,95 @@ internal static class Program
         if (!preview.Handled)
         {
             target.RaiseEvent(new KeyEventArgs(Keyboard.PrimaryDevice, source, Environment.TickCount, key) { RoutedEvent = Keyboard.KeyDownEvent });
+        }
+    }
+
+    /// <summary>
+    /// Changes shortcuts as the settings window would (name → gesture, "" removes, "default" restores), prints the
+    /// conflicts, optionally renders the shortcut list, then saves and applies them to the running window.
+    /// </summary>
+    private static void ChangeShortcuts(MainViewModel vm, MainWindow window, Dictionary<string, string> changes, string? shot)
+    {
+        var settings = new SettingsViewModel(vm.Settings);
+        foreach (var (name, gesture) in changes)
+        {
+            var row = settings.Shortcuts.Single(r => r.Name == name);
+            if (gesture == "default")
+            {
+                settings.ResetShortcut(row);
+            }
+            else
+            {
+                settings.SetShortcut(row, gesture);
+            }
+        }
+
+        foreach (var row in settings.Shortcuts.Where(r => r.HasConflict || r.HasNote))
+        {
+            Console.WriteLine($"  {(row.HasConflict ? "conflict" : "note")}: {row.Description} [{row.Display}] — {row.Conflict ?? row.Note}");
+        }
+
+        if (shot is not null)
+        {
+            var dialog = new Ultiviewer.App.Views.SettingsWindow(settings)
+            {
+                ShowActivated = false,
+                ShowInTaskbar = false,
+                WindowStartupLocation = WindowStartupLocation.Manual,
+                Left = -32000,
+                Top = -32000,
+            };
+            dialog.Show();
+            Pump(300);
+            var row = settings.Shortcuts.First(r => changes.ContainsKey(r.Name));
+            dialog.ShortcutList.ScrollIntoView(row);
+            dialog.ShortcutList.BringIntoView();
+            Pump(300);
+            Save(dialog, shot);
+            Console.WriteLine($"saved {shot}");
+            dialog.Close();
+        }
+
+        settings.ApplyTo(vm.Settings);
+        window.ApplyShortcuts();
+        Console.WriteLine("  stored overrides: " + string.Join(", ", vm.Settings.Shortcuts.Select(p => $"{p.Key}={p.Value}")));
+    }
+
+    /// <summary>Opens the command palette off-screen (never activated), filters it, prints and optionally runs the top entry.</summary>
+    private static void ShowPalette(MainViewModel vm, MainWindow window, PaletteStep step)
+    {
+        var palette = new Ultiviewer.App.Views.CommandPaletteWindow(window.PaletteCommands(), vm.Session.RecentCommands, window)
+        {
+            ShowActivated = false,
+            ShowInTaskbar = false,
+            Left = -32000,
+            Top = -32000,
+        };
+        palette.Show();
+        Pump(200);
+        palette.Filter(step.Query);
+        Pump(200);
+        Console.WriteLine($"palette '{step.Query}': {palette.Shown.Count} commands");
+        foreach (var item in palette.Shown.Take(step.Count))
+        {
+            Console.WriteLine($"  {(item.IsChecked == true ? "✓ " : "")}{item.Key}{(item.Gesture.Length > 0 ? "  [" + item.Gesture + "]" : "")}");
+        }
+
+        if (step.Shot is { } shot)
+        {
+            Save(palette, shot);
+            Console.WriteLine($"saved {shot}");
+        }
+
+        if (step.Run)
+        {
+            palette.RunSelected();
+            Pump(500);
+            Console.WriteLine("ran; recent: " + string.Join(" | ", vm.Session.RecentCommands));
+        }
+        else
+        {
+            palette.Close();
         }
     }
 
@@ -578,6 +677,14 @@ internal sealed class Step
     /// <summary>Renders the quick-note window (off-screen, not activated) to this PNG.</summary>
     public string? CaptureWindow { get; set; }
 
+    /// <summary>Shortcut changes as made in Settings (command name → gesture; "" removes, "default" restores).</summary>
+    public Dictionary<string, string>? Shortcuts { get; set; }
+
+    /// <summary>Renders the settings window's shortcut list after <see cref="Shortcuts"/> to this PNG.</summary>
+    public string? ShortcutsShot { get; set; }
+
+    public PaletteStep? Palette { get; set; }
+
     public string? Key { get; set; }
 
     /// <summary>An <c>EditorCommands</c> property name to run on the focused editor (e.g. "FoldAll", "MoveLineUp").</summary>
@@ -603,6 +710,20 @@ internal sealed class Step
 
     /// <summary>Writes settings and the session (open tabs, split) as closing the window would.</summary>
     public bool SaveState { get; set; }
+}
+
+/// <summary>Opens the command palette with a query.</summary>
+internal sealed class PaletteStep
+{
+    public string Query { get; set; } = "";
+
+    /// <summary>How many of the shown commands to print.</summary>
+    public int Count { get; set; } = 10;
+
+    public string? Shot { get; set; }
+
+    /// <summary>Runs the first shown command.</summary>
+    public bool Run { get; set; }
 }
 
 /// <summary>Opens the active tab's history window.</summary>
