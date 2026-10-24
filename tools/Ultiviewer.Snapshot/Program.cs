@@ -428,7 +428,9 @@ internal static class Program
         using (var context = visual.RenderOpen())
         {
             context.DrawRectangle(new SolidColorBrush(ThemeService.Instance.Palette.Background), null, new Rect(0, 0, width, height));
-            context.DrawRectangle(new VisualBrush(content), null, new Rect(0, 0, width, height));
+            // An absolute viewbox maps the content 1:1 (the default one stretches its drawn bounds, which can be stale).
+            var brush = new VisualBrush(content) { ViewboxUnits = BrushMappingMode.Absolute, Viewbox = new Rect(0, 0, width, height) };
+            context.DrawRectangle(brush, null, new Rect(0, 0, width, height));
         }
 
         var bitmap = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
