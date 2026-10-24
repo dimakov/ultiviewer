@@ -218,6 +218,20 @@ internal static class Program
             }
         }
 
+        if (step.PasteHtml is { } pasteHtml)
+        {
+            Console.WriteLine("pasted as markdown: " + window.ActiveEditorHost.PasteHtml(pasteHtml) + " · " + vm.StatusMessage);
+            Pump(300);
+        }
+
+        if (step.Clip is { } clipAddress)
+        {
+            var clipping = vm.ClipWebPageCommand.ExecuteAsync(clipAddress);
+            Wait(clipping, 60000);
+            Pump(500);
+            Console.WriteLine($"clip: {vm.StatusMessage} · active={vm.ActiveTab?.Path}");
+        }
+
         if (step.Table is { } table)
         {
             vm.SearchAsTable = table;
@@ -710,6 +724,12 @@ internal sealed class Step
 
     /// <summary>Renders the quick-note window (off-screen, not activated) to this PNG.</summary>
     public string? CaptureWindow { get; set; }
+
+    /// <summary>Pastes this HTML (or CF_HTML) into the active editor as a formatted paste, without the real clipboard.</summary>
+    public string? PasteHtml { get; set; }
+
+    /// <summary>Clips this web address or .html file into a new page.</summary>
+    public string? Clip { get; set; }
 
     /// <summary>Shows search results as a table (true) or lines (false).</summary>
     public bool? Table { get; set; }
