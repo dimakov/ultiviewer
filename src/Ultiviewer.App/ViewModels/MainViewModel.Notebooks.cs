@@ -123,6 +123,13 @@ public sealed partial class MainViewModel
         var node = FindNode(path);
         if (node is not null)
         {
+            // A just-created node has no tree item yet, so the TreeView can't unselect the old one itself; left
+            // selected, the old item would take the selection back when a refresh moves it.
+            if (SelectedNode is { } previous && previous != node)
+            {
+                previous.IsSelected = false;
+            }
+
             node.ExpandAncestors();
             node.IsSelected = true;
             SelectedNode = node;
