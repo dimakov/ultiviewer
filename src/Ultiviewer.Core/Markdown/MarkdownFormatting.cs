@@ -149,10 +149,12 @@ public static partial class MarkdownFormatting
             _ => QuotePrefix().IsMatch(l),
         });
 
+        // Only empty lines (a new paragraph): they become empty items, ready to type into.
+        var onlyEmpty = nonEmpty.Count == 0;
         var number = 0;
         return lines.Select(line =>
         {
-            if (line.Trim().Length == 0)
+            if (line.Trim().Length == 0 && !onlyEmpty)
             {
                 return line;
             }

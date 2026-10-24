@@ -77,4 +77,13 @@ public class MarkdownFormattingTests
         Assert.Equal("see [docs](https://example.com)", Apply("see docs", link));
         Assert.Equal((11, 19), (link.SelectionStart, link.SelectionLength));
     }
+
+    [Fact]
+    public void ListButtonsWorkOnAnEmptyLine()
+    {
+        Assert.Equal(["- "], MarkdownFormatting.ToggleList([""], ListStyle.Bullet));
+        Assert.Equal(["1. "], MarkdownFormatting.ToggleList([""], ListStyle.Numbered));
+        Assert.Equal(["  > "], MarkdownFormatting.ToggleList(["  "], ListStyle.Quote));
+        Assert.Equal(["- a", "", "- b"], MarkdownFormatting.ToggleList(["a", "", "b"], ListStyle.Bullet));
+    }
 }

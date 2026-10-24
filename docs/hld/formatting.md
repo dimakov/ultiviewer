@@ -17,7 +17,7 @@ and the preview shows the result.
 | Font color | toolbar palette, menu | `<span style="color:#…">text</span>`; "Automatic" removes it |
 | Inline code | Ctrl+` | `` `text` `` |
 | Clear formatting | Ctrl+Space | strips inline markers, tags and color spans from the selection (or the caret line) |
-| Bulleted / numbered list, quote | Ctrl+. / Ctrl+/ / menu | `- `, `1. ` (renumbered from 1), `> ` on every selected line |
+| Bulleted / numbered list, quote | Ctrl+. / Ctrl+/ / menu | `- `, `1. ` (renumbered from 1), `> ` on every selected non-empty line; on an empty line it starts an empty item with the caret after the marker |
 | Indent / outdent list item | Tab / Shift+Tab on a list line | one indentation unit, like OneNote |
 | To-do | Ctrl+1 | existing `TaskMarkers.Cycle` (see `editing-tools.md`) |
 | Link | Ctrl+K | `[text](url)`; a URL on the clipboard is used, otherwise `https://` is selected to type over |
