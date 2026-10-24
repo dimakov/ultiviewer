@@ -22,6 +22,8 @@ public sealed partial class SettingsViewModel : ObservableObject
         _autosaveNotebookPages = settings.AutosaveNotebookPages;
         _autosaveExternalFiles = settings.AutosaveExternalFiles;
         _autosaveDelayMs = settings.AutosaveDelayMs;
+        _keepHistory = settings.KeepHistory;
+        _historyIntervalMinutes = settings.HistoryIntervalMinutes;
         _defaultLineEnding = settings.DefaultLineEnding;
         _defaultUtf8Bom = settings.DefaultUtf8Bom;
         _defaultMarkdownViewMode = settings.DefaultMarkdownViewMode;
@@ -82,6 +84,12 @@ public sealed partial class SettingsViewModel : ObservableObject
     private int _autosaveDelayMs;
 
     [ObservableProperty]
+    private bool _keepHistory;
+
+    [ObservableProperty]
+    private int _historyIntervalMinutes;
+
+    [ObservableProperty]
     private LineEnding _defaultLineEnding;
 
     [ObservableProperty]
@@ -135,6 +143,8 @@ public sealed partial class SettingsViewModel : ObservableObject
         settings.AutosaveNotebookPages = AutosaveNotebookPages;
         settings.AutosaveExternalFiles = AutosaveExternalFiles;
         settings.AutosaveDelayMs = Math.Clamp(AutosaveDelayMs, 200, 60000);
+        settings.KeepHistory = KeepHistory;
+        settings.HistoryIntervalMinutes = Math.Clamp(HistoryIntervalMinutes, 1, 24 * 60);
         settings.DefaultLineEnding = DefaultLineEnding;
         settings.DefaultUtf8Bom = DefaultUtf8Bom;
         settings.DefaultMarkdownViewMode = DefaultMarkdownViewMode;

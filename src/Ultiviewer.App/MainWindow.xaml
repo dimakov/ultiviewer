@@ -43,6 +43,7 @@
                 <MenuItem Header="Save _as…" Command="{Binding SaveAsCommand}" InputGestureText="Ctrl+Alt+S" />
                 <MenuItem Header="Save a_ll" Command="{Binding SaveAllCommand}" InputGestureText="Ctrl+Shift+S" />
                 <MenuItem Header="_Reload from disk" Command="{Binding ReloadCommand}" />
+                <MenuItem Header="Page _history…" Command="{Binding ShowHistoryCommand}" InputGestureText="Ctrl+Shift+H" />
                 <Separator />
                 <MenuItem Header="_Close tab" Command="{Binding CloseCommand}" InputGestureText="Ctrl+W" />
                 <MenuItem Header="Close all tabs" Command="{Binding CloseAllCommand}" />

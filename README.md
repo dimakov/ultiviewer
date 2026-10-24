@@ -9,6 +9,7 @@ Notes are ordinary `.md` files in ordinary folders, so Explorer, git, OneDrive a
 - **Notebooks**: any folder is a notebook; subfolders are sections; `Title.md` is a page; `Title/` next to it holds subpages; `Title.assets/` holds pasted images and attachments. Drag and drop to reorder, nest and move; section colors; Recycle Bin deletes; changes made outside the app show up immediately.
 - **Editor**: tabs (preview tabs, pinning, reopen closed), syntax highlighting for Markdown and many languages, encoding and line endings preserved byte for byte, light/dark themes.
 - **Saving**: notebook pages save themselves (like OneNote); other files use Ctrl+S (like Notepad++); unsaved buffers survive crashes and restarts; files changed by other programs reload or ask.
+- **Version history** (Ctrl+Shift+H): versions kept as you edit and whenever another program changes a file; compare any version with the current text, copy from it or restore it; conflicts keep both sides.
 - **Live view** (like Obsidian's Live Preview): edit notes formatted, with headings, bold, links, checkboxes, quotes, code blocks, tables and images drawn in place; Markdown syntax appears only where the caret is.
 - **Preview**: Live / Edit / Split / Preview per tab (Ctrl+Shift+V) with scroll sync, tables, task lists, math, Mermaid diagrams, highlighted code, `[[wiki links]]` and `#tags`; offline and locked down (no scripts from notes).
 - **Search** (Ctrl+Shift+F): indexed, live, accent- and case-insensitive, substring matching (works for Hebrew prefixes and code identifiers), `"phrases"`, `OR`, `-exclude`, `#tag`, `is:todo`; replace across the listed pages. **Go to page** (Ctrl+E).
@@ -45,6 +46,7 @@ The app is built self-contained (`win-x64`), so `Ultiviewer.exe` runs without a 
 | Order and colors | `.ultiviewer.json` (hidden) inside notebook folders |
 | Settings | `%APPDATA%\Ultiviewer\settings.json` |
 | Session, search index, unsaved-buffer backups, WebView2 data, error log | `%LOCALAPPDATA%\Ultiviewer\` |
+| Version history | `%LOCALAPPDATA%\Ultiviewer\history\` (one folder per file) |
 
 Set `ULTIVIEWER_HOME=<folder>` to keep all of the above (except notes) in one folder — handy for testing.
 

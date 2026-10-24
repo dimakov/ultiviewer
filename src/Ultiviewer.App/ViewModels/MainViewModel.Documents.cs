@@ -8,6 +8,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Ultiviewer.App.Services;
 using Ultiviewer.Core.Files;
+using Ultiviewer.Core.History;
 using Ultiviewer.Core.Notebooks;
 using Ultiviewer.Core.Settings;
 using Ultiviewer.Core.Text;
@@ -366,9 +367,11 @@ public sealed partial class MainViewModel
 
         try
         {
+            RecordHistoryBaseline(tab);
             Directory.CreateDirectory(Path.GetDirectoryName(tab.Path)!);
             var (stamp, hash) = TextDocumentFile.Save(tab.Path, tab.Document.Text, tab.Format);
             tab.MarkSaved(stamp, hash);
+            RecordVersion(tab, tab.Document.Text, VersionReason.Saved);
             DropBackup(tab);
             if (interactive)
             {
@@ -411,6 +414,7 @@ public sealed partial class MainViewModel
         UpdateNotebookPageFlag(tab);
         tab.KnownStamp = null;
         tab.KnownHash = null;
+        tab.HistoryBaselineRecorded = false; // a file being overwritten keeps its old text in history
         if (!SaveTab(tab, interactive: true))
         {
             tab.Path = oldPath;
@@ -828,16 +832,21 @@ public sealed partial class MainViewModel
 
         if (!tab.IsDirty)
         {
+            RecordVersion(tab, tab.Document.Text, VersionReason.BeforeOutsideChange);
+            RecordVersion(tab, loaded.Text, VersionReason.ChangedOnDisk);
             ReloadTab(tab, loaded);
             StatusMessage = $"Reloaded \"{tab.Title}\" — it was changed by another program";
             return;
         }
 
+        // A conflict: both versions go to history whatever the user picks, so neither can be lost.
+        RecordVersion(tab, tab.Document.Text, VersionReason.Conflict);
+        RecordVersion(tab, loaded.Text, VersionReason.ChangedOnDisk);
         _checkingDisk = true;
         try
         {
             if (_dialogs.Confirm(
-                    $"\"{tab.Title}\" was changed by another program.\n\nReload it and lose the unsaved changes made here?\n\nCancel keeps your version; saving it will overwrite the other change.",
+                    $"\"{tab.Title}\" was changed by another program.\n\nReload it and replace the unsaved changes made here?\n\nCancel keeps your version; saving it will overwrite the other change. Both versions are kept in File → Page history.",
                     warning: true))
             {
                 ReloadTab(tab, loaded);
@@ -873,6 +882,7 @@ public sealed partial class MainViewModel
 
     partial void OnItemMoved(string oldPath, string newPath)
     {
+        _history?.Move(oldPath, newPath);
         foreach (var tab in Tabs)
         {
             if (tab.Path is not { } path)

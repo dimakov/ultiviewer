@@ -41,6 +41,20 @@ public class VersionHistoryTests
     }
 
     [Fact]
+    public void VersionsRecordedTogetherListNewestFirst()
+    {
+        using var temp = new TempDirectory();
+        var history = new VersionHistory(temp.Combine("history"));
+        var page = temp.Combine("Page.md");
+
+        history.Record(page, "mine", VersionReason.Conflict, T0);
+        history.Record(page, "theirs", VersionReason.ChangedOnDisk, T0);
+
+        Assert.Equal([VersionReason.ChangedOnDisk, VersionReason.Conflict], history.List(page).Select(v => v.Reason));
+        Assert.Null(history.Record(page, "theirs", VersionReason.Saved, T0.AddHours(1))); // same as the newest
+    }
+
+    [Fact]
     public void PruneKeepsRecentVersionsAndThinsOlderOnes()
     {
         var now = T0.AddDays(60);

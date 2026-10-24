@@ -91,6 +91,9 @@ public sealed partial class DocumentTabViewModel : ObservableObject
     /// <summary>True for Markdown pages inside an open notebook (autosaved like OneNote).</summary>
     public bool IsNotebookPage { get; set; }
 
+    /// <summary>True once the on-disk text from before this session's edits went to version history.</summary>
+    public bool HistoryBaselineRecorded { get; set; }
+
     /// <summary>Stamp and content hash of the file as last loaded or saved by us.</summary>
     public FileStamp? KnownStamp { get; set; }
 

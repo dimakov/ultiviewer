@@ -26,6 +26,9 @@ public static class AppPaths
 
     public static string BackupDirectory => Path.Combine(LocalDirectory, "backup");
 
+    /// <summary>Version history of saved files (see <see cref="History.VersionHistory"/>).</summary>
+    public static string HistoryDirectory => Path.Combine(LocalDirectory, "history");
+
     public static string WebViewDataDirectory => Path.Combine(LocalDirectory, "WebView2");
 
     /// <summary>Default parent folder for notebooks created in the app.</summary>

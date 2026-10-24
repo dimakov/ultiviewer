@@ -33,6 +33,22 @@ public partial class MainWindow : Window
         PreviewKeyDown += OnWindowPreviewKeyDown;
         Services.KeyboardShortcuts.BindApplicationCommands(this, vm, vm.Settings.Shortcuts);
         _vm.SettingsRequested += ShowSettings;
+        _vm.HistoryRequested += ShowHistory;
+    }
+
+    /// <summary>One history window per tab; asking again brings it forward.</summary>
+    private void ShowHistory(DocumentTabViewModel tab)
+    {
+        if (OwnedWindows.OfType<Views.HistoryWindow>().FirstOrDefault(w => w.Tab == tab) is { } open)
+        {
+            open.Activate();
+            return;
+        }
+
+        if (_vm.History is { } history)
+        {
+            new Views.HistoryWindow(new HistoryViewModel(_vm, tab, history)) { Owner = this }.Show();
+        }
     }
 
     /// <summary>Brings the window forward and opens files handed over by a second launch.</summary>

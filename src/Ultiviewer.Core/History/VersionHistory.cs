@@ -18,6 +18,9 @@ public enum VersionReason
     /// <summary>Another program changed the file.</summary>
     ChangedOnDisk,
 
+    /// <summary>The text last saved here, just before another program replaced it.</summary>
+    BeforeOutsideChange,
+
     /// <summary>Unsaved text kept when the file changed on disk at the same time (a conflict).</summary>
     Conflict,
 
@@ -46,8 +49,11 @@ public sealed class VersionHistory(string root)
         Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(Path.GetFullPath(path).ToUpperInvariant())))[..20];
 
     /// <summary>Versions of <paramref name="path"/>, newest first.</summary>
-    public IReadOnlyList<VersionInfo> List(string path) =>
-        Load(Folder(path))?.Versions.OrderByDescending(v => v.TimeUtc).ToList() ?? [];
+    public IReadOnlyList<VersionInfo> List(string path) => Load(Folder(path)) is { } index ? NewestFirst(index.Versions).ToList() : [];
+
+    /// <summary>Versions recorded in the same millisecond get ids with an "x" suffix, so the id breaks ties.</summary>
+    private static IOrderedEnumerable<VersionInfo> NewestFirst(IEnumerable<VersionInfo> versions) =>
+        versions.OrderByDescending(v => v.TimeUtc).ThenByDescending(v => v.Id, StringComparer.Ordinal);
 
     public string? Read(string path, string id)
     {
@@ -74,7 +80,7 @@ public sealed class VersionHistory(string root)
         var folder = Folder(path);
         var index = Load(folder) ?? new HistoryIndex { Path = Path.GetFullPath(path) };
         var hash = TextDocumentFile.Hash(Utf8.GetBytes(text));
-        var newest = index.Versions.MaxBy(v => v.TimeUtc);
+        var newest = NewestFirst(index.Versions).FirstOrDefault();
         if (newest is not null
             && (newest.Hash == hash || (reason == VersionReason.Saved && newest.Reason == VersionReason.Saved && now - newest.TimeUtc < Interval)))
         {
@@ -171,7 +177,7 @@ public sealed class VersionHistory(string root)
     {
         var keep = new List<VersionInfo>();
         var seenBuckets = new HashSet<string>();
-        foreach (var version in versions.OrderByDescending(v => v.TimeUtc))
+        foreach (var version in NewestFirst(versions))
         {
             var age = nowUtc - version.TimeUtc;
             var bucket = age < TimeSpan.FromDays(1) ? version.Id

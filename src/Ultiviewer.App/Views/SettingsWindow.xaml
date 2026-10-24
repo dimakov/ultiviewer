@@ -64,6 +64,11 @@
                     <TextBlock Style="{StaticResource Label}" Text="Save after the last keystroke, in milliseconds" />
                     <TextBox Width="90" Text="{Binding AutosaveDelayMs, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Autosave delay in milliseconds" />
                 </StackPanel>
+                <StackPanel Margin="0,8,0,0" Orientation="Horizontal">
+                    <CheckBox VerticalAlignment="Center" Content="Keep version history, at most one saved version every" IsChecked="{Binding KeepHistory}" />
+                    <TextBox Width="50" Margin="6,0" IsEnabled="{Binding KeepHistory}" Text="{Binding HistoryIntervalMinutes, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="History interval in minutes" />
+                    <TextBlock Style="{StaticResource Label}" Text="minutes (File → Page history)" />
+                </StackPanel>
 
                 <TextBlock Style="{StaticResource Section}" Text="New pages and files" />
                 <Grid>

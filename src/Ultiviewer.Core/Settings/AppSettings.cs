@@ -54,6 +54,12 @@ public sealed class AppSettings
 
     public bool AutosaveNotebookPages { get; set; } = true;
 
+    /// <summary>Keep versions of saved files (File → Page history).</summary>
+    public bool KeepHistory { get; set; } = true;
+
+    /// <summary>Saves closer together than this keep one version.</summary>
+    public int HistoryIntervalMinutes { get; set; } = 5;
+
     /// <summary>Files outside notebooks are saved explicitly unless this is on.</summary>
     public bool AutosaveExternalFiles { get; set; }
 

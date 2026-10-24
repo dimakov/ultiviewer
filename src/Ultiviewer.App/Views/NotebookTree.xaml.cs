@@ -221,6 +221,7 @@ public partial class NotebookTree : UserControl
                 menu.Items.Add(new Separator());
                 menu.Items.Add(Item("Rename", vm.RenameCommand, node, "F2"));
                 menu.Items.Add(Item("Delete", vm.DeleteCommand, node, "Del"));
+                menu.Items.Add(Item("History…", new RelayAction(() => vm.ShowHistoryFor(node.Path))));
                 AddPageExtras(menu, node);
                 menu.Items.Add(new Separator());
                 menu.Items.Add(Item("Open in Explorer", vm.RevealInExplorerCommand, node));

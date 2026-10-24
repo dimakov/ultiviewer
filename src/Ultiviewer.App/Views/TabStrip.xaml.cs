@@ -139,6 +139,7 @@ public partial class TabStrip : UserControl
         if (tab.Path is not null)
         {
             menu.Items.Add(Item("Reload from disk", vm.ReloadCommand, tab));
+            menu.Items.Add(Item("History…", vm.ShowHistoryCommand, tab, "Ctrl+Shift+H"));
             menu.Items.Add(new Separator());
             menu.Items.Add(Item("Show in notebook tree", vm.RevealTabInTreeCommand, tab));
             menu.Items.Add(Item("Open containing folder", vm.OpenTabFolderCommand, tab));
