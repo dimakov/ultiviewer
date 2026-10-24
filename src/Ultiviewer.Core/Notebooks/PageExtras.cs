@@ -34,12 +34,16 @@ public static class PageAssets
     /// <summary>Markdown for a link from the page to an attachment: image syntax for images.</summary>
     public static string MarkdownLink(string pagePath, string assetPath)
     {
-        var relative = Path.GetRelativePath(Path.GetDirectoryName(pagePath)!, assetPath).Replace(Path.DirectorySeparatorChar, '/');
+        var relative = RelativeUrl(pagePath, assetPath);
         var name = Path.GetFileNameWithoutExtension(assetPath);
         return IsImage(assetPath)
-            ? $"![{name}]({MarkdownLinks.Encode(relative)})"
-            : $"[{Path.GetFileName(assetPath)}]({MarkdownLinks.Encode(relative)})";
+            ? $"![{name}]({relative})"
+            : $"[{Path.GetFileName(assetPath)}]({relative})";
     }
+
+    /// <summary>The encoded link target from the page to an attachment ("Title.assets/image%201.png").</summary>
+    public static string RelativeUrl(string pagePath, string assetPath) =>
+        MarkdownLinks.Encode(Path.GetRelativePath(Path.GetDirectoryName(pagePath)!, assetPath).Replace(Path.DirectorySeparatorChar, '/'));
 }
 
 /// <summary>New pages from templates in a notebook's <c>_templates</c> folder.</summary>

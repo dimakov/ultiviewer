@@ -64,6 +64,34 @@ public static class FileNameRules
         return null;
     }
 
+    /// <summary>
+    /// A valid name made from any text (a web page title): forbidden characters become spaces or dashes,
+    /// whitespace collapses, and it is shortened; <paramref name="fallback"/> when nothing usable remains.
+    /// </summary>
+    public static string MakeValid(string text, string fallback)
+    {
+        var builder = new System.Text.StringBuilder();
+        foreach (var c in text)
+        {
+            builder.Append(c switch
+            {
+                ':' or '|' or '/' or '\\' => " - ",
+                '"' => "'",
+                _ when c < 32 || InvalidChars.Contains(c) => " ",
+                _ => c.ToString(),
+            });
+        }
+
+        var name = System.Text.RegularExpressions.Regex.Replace(builder.ToString(), @"\s+", " ");
+        name = System.Text.RegularExpressions.Regex.Replace(name, @"(?: -)+ ", " - ").Trim(' ', '.', '-');
+        if (name.Length > 120)
+        {
+            name = name[..120].TrimEnd(' ', '.', '-');
+        }
+
+        return Validate(name) is null ? name : fallback;
+    }
+
     public static void EnsureValid(string name)
     {
         if (Validate(name) is { } error)
