@@ -22,7 +22,7 @@ namespace Ultiviewer.Snapshot;
 /// </summary>
 internal static class Program
 {
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
+    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true, Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() } };
 
     [STAThread]
     private static int Main(string[] args)
@@ -145,6 +145,36 @@ internal static class Program
             File.WriteAllText(externalPath, external);
             File.SetLastWriteTimeUtc(externalPath, DateTime.UtcNow.AddSeconds(1));
             vm.CheckAllDiskStates();
+        }
+
+        if (step.Today)
+        {
+            vm.OpenTodayCommand.Execute(null);
+            Pump(300);
+        }
+
+        if (step.Capture is { } capture)
+        {
+            Console.WriteLine("captured to " + vm.Capture(capture, step.CaptureTarget));
+            Pump(300);
+        }
+
+        if (step.CaptureWindow is { } captureShot)
+        {
+            var quick = new Ultiviewer.App.Views.QuickCaptureWindow(vm)
+            {
+                ShowActivated = false,
+                ShowInTaskbar = false,
+                Topmost = false,
+                WindowStartupLocation = WindowStartupLocation.Manual,
+                Left = -32000,
+                Top = -32000,
+            };
+            quick.Show();
+            Pump(300);
+            Save(quick, captureShot);
+            Console.WriteLine($"saved {captureShot}");
+            quick.Close();
         }
 
         if (step.History is { } history && vm.ActiveTab is { } historyTab && vm.History is { } store)
@@ -377,6 +407,17 @@ internal sealed class Step
     public bool? Confirm { get; set; }
 
     public HistoryStep? History { get; set; }
+
+    /// <summary>Opens today's daily note.</summary>
+    public bool Today { get; set; }
+
+    /// <summary>Adds this text with the quick-note logic to <see cref="CaptureTarget"/>.</summary>
+    public string? Capture { get; set; }
+
+    public Ultiviewer.Core.Capture.CaptureTarget CaptureTarget { get; set; }
+
+    /// <summary>Renders the quick-note window (off-screen, not activated) to this PNG.</summary>
+    public string? CaptureWindow { get; set; }
 
     public string? Key { get; set; }
 
