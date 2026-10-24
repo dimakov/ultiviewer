@@ -317,6 +317,17 @@ Each milestone ends with a runnable app and small, focused commits.
   - a converter turns that XML into Markdown: outlines become paragraphs and lists, tables become tables, images are saved to the assets folder, and to-do tags become `- [ ]`.
 - Writes a new notebook folder and never modifies the source.
 - Ink, free-positioned containers and embedded files will need lossy fallbacks.
+- **Import preview** — nothing is written until the user has seen the result:
+  - *File → Import from OneNote…* opens a read-only preview window. It shows the source hierarchy (notebooks → section groups → sections → pages) as a tree with checkboxes, page counts and sizes.
+  - Selecting a page shows it converted. The rendered Markdown uses the normal preview renderer, and its Markdown source sits beside it, so the conversion can be judged before importing.
+  - Each page lists what will be lossy: ink, free-positioned containers, embedded files, unsupported tags.
+  - The target folder, the resulting file names and any name collisions are shown before import.
+  - **Import** writes only the checked items. The preview's conversions are reused, so what was seen is exactly what is written.
+- **Inputs:**
+  - Notebooks open in OneNote.
+  - `.one` section files and `.onepkg` packages, opened from the menu or dropped on the window. A `.onepkg` is a CAB archive of `.one` files and is unpacked to a temp folder.
+  - Reading needs OneNote's COM API (`OpenHierarchy` on the file, then `GetHierarchy` / `GetPageContent`). A direct MS-ONESTORE reader, which would not need OneNote, is a possible later step.
+- **Privacy:** the user's OneNote data is read only after they start an import or preview.
 
 ### M8: Live preview editing (Obsidian style)
 
