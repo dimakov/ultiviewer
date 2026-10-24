@@ -84,6 +84,12 @@ public sealed class AppSettings
     /// <summary>Widest text column of the Live view in pixels, centered; 0 uses the full width.</summary>
     public int LiveMaxWidth { get; set; } = 820;
 
+    /// <summary>
+    /// Live view shows the Markdown marks of the text at the caret (Obsidian's behavior). Off (the default), only
+    /// the formatting shows and the marks stay hidden while editing.
+    /// </summary>
+    public bool ShowMarksAtCaret { get; set; }
+
     public string DateFormat { get; set; } = "yyyy-MM-dd";
 
     public string TimeFormat { get; set; } = "HH:mm";

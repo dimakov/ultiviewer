@@ -19,6 +19,13 @@ public sealed partial class MainViewModel
         set => SetEditorSetting(Settings.WordWrap, value, v => Settings.WordWrap = v);
     }
 
+    /// <summary>Live view shows Markdown marks at the caret (Obsidian) instead of only the formatting.</summary>
+    public bool ShowMarksAtCaret
+    {
+        get => Settings.ShowMarksAtCaret;
+        set => SetEditorSetting(Settings.ShowMarksAtCaret, value, v => Settings.ShowMarksAtCaret = v);
+    }
+
     public bool ShowLineNumbers
     {
         get => Settings.ShowLineNumbers;

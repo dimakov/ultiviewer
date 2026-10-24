@@ -10,8 +10,9 @@ using Ultiviewer.Core.Markdown;
 namespace Ultiviewer.App.Editor.Live;
 
 /// <summary>
-/// Obsidian-style live preview inside AvalonEdit: the Markdown source stays the document, but syntax away from
-/// the caret is hidden or drawn as widgets and the text is styled. <see cref="LiveMarkup"/> (Core) decides what
+/// Obsidian-style live preview inside AvalonEdit: the Markdown source stays the document, but its syntax is hidden
+/// or drawn as widgets and the text is styled (by default the marks stay hidden at the caret too, see
+/// LivePreview.HiddenMarks.cs; optionally they show around the caret, as in Obsidian). <see cref="LiveMarkup"/> (Core) decides what
 /// each range is; the generator, transformer and background renderer draw it; this class tracks the caret's
 /// reveal region, mouse clicks on links and checkboxes, and list-friendly Backspace.
 /// </summary>
@@ -146,7 +147,9 @@ public sealed partial class LivePreview
     internal bool IsRevealed(LiveSpan span)
     {
         var (start, end) = SelectionRange();
-        return span.IsRevealedBy(start, end);
+        return _hideMarks && _markup is { } markup
+            ? markup.IsRevealedWithHiddenMarks(span, start, end)
+            : span.IsRevealedBy(start, end);
     }
 
     internal VisualLineElement? CreateElement(LiveSpan span, int lineNumber)
@@ -255,9 +258,9 @@ public sealed partial class LivePreview
     /// <summary>Redraws the lines that change between source and rendered as the caret or selection moves.</summary>
     private void OnSelectionMoved(object? sender, EventArgs e)
     {
-        if (Markup is not { } markup || _document is null)
+        if (Markup is not { } markup || _document is null || SnapCaret())
         {
-            return;
+            return; // a snapped caret raises this again from its new place
         }
 
         var (start, end) = SelectionRange();
@@ -357,6 +360,12 @@ public sealed partial class LivePreview
     /// <summary>Backspace at the start of a rendered list item removes its bullet or checkbox, as in OneNote and Obsidian.</summary>
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
+        if (HandleHiddenMarksKey(e))
+        {
+            e.Handled = true;
+            return;
+        }
+
         if (e.Key != Key.Back || Keyboard.Modifiers != ModifierKeys.None || !_editor.TextArea.Selection.IsEmpty || _document is null)
         {
             return;

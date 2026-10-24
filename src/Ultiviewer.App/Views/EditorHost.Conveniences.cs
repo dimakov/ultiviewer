@@ -223,6 +223,9 @@ public partial class EditorHost
             return;
         }
 
+        // With hidden marks, Enter keeps formatting intact (it may move the caret past them first).
+        _live?.PrepareEnter();
+
         var document = Editor.Document;
         var line = document.GetLineByOffset(Editor.CaretOffset);
         if (Editor.CaretOffset != line.EndOffset)

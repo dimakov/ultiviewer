@@ -51,7 +51,9 @@
                         <TextBlock Margin="8,0,0,0" VerticalAlignment="Center" Opacity="0.7" Text="pixels (0 = full width)" />
                     </StackPanel>
                 </Grid>
-                <CheckBox Margin="0,10,0,0" Content="Word wrap" IsChecked="{Binding WordWrap}" />
+                <CheckBox Margin="0,10,0,0" Content="Live view: show Markdown marks (**, #, links) at the caret, as Obsidian does (otherwise only the formatting shows)"
+                          IsChecked="{Binding ShowMarksAtCaret}" />
+                <CheckBox Margin="0,6,0,0" Content="Word wrap" IsChecked="{Binding WordWrap}" />
                 <CheckBox Margin="0,6,0,0" Content="Line numbers" IsChecked="{Binding ShowLineNumbers}" />
                 <CheckBox Margin="0,6,0,0" Content="Show whitespace and line endings" IsChecked="{Binding ShowWhitespace}" />
                 <CheckBox Margin="0,6,0,0" Content="Highlight the current line" IsChecked="{Binding HighlightCurrentLine}" />

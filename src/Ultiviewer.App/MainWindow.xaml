@@ -170,6 +170,7 @@
                 <MenuItem Command="editor:EditorCommands.FoldAll" />
                 <MenuItem Command="editor:EditorCommands.UnfoldAll" />
                 <Separator />
+                <MenuItem Header="Show Markdown _marks at the caret (Live)" IsCheckable="True" IsChecked="{Binding ShowMarksAtCaret}" />
                 <MenuItem Header="_Word wrap" IsCheckable="True" IsChecked="{Binding WordWrap}" />
                 <MenuItem Header="_Line numbers" IsCheckable="True" IsChecked="{Binding ShowLineNumbers}" />
                 <MenuItem Header="Show _whitespace" IsCheckable="True" IsChecked="{Binding ShowWhitespace}" />

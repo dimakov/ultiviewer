@@ -40,6 +40,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         _defaultMarkdownViewMode = settings.DefaultMarkdownViewMode;
         _liveFontFamily = settings.LiveFontFamily;
         _liveMaxWidth = settings.LiveMaxWidth;
+        _showMarksAtCaret = settings.ShowMarksAtCaret;
         _dateFormat = settings.DateFormat;
         _timeFormat = settings.TimeFormat;
         Shortcuts = KeyboardShortcuts.All(settings.Shortcuts);
@@ -195,6 +196,9 @@ public sealed partial class SettingsViewModel : ObservableObject
     private int _liveMaxWidth;
 
     [ObservableProperty]
+    private bool _showMarksAtCaret;
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(DatePreview))]
     private string _dateFormat;
 
@@ -244,6 +248,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         settings.DefaultMarkdownViewMode = DefaultMarkdownViewMode;
         settings.LiveFontFamily = string.IsNullOrWhiteSpace(LiveFontFamily) ? "Segoe UI" : LiveFontFamily;
         settings.LiveMaxWidth = LiveMaxWidth <= 0 ? 0 : Math.Clamp(LiveMaxWidth, 300, 4000);
+        settings.ShowMarksAtCaret = ShowMarksAtCaret;
         settings.DailyNotesNotebook = string.IsNullOrWhiteSpace(DailyNotesNotebook) ? null : DailyNotesNotebook;
         settings.DailyNotesFolder = DailyNotesFolder.Trim();
         settings.DailyNoteFormat = string.IsNullOrWhiteSpace(DailyNoteFormat) ? "yyyy-MM-dd" : DailyNoteFormat.Trim();

@@ -6,10 +6,14 @@
 Ctrl+Shift+V cycles Live → Edit → Split → Preview). The editor still edits the Markdown source, but shows it
 formatted, like Obsidian's Live Preview:
 
-- Syntax is hidden away from the caret: `**bold**` shows as **bold**, `## Title` as a large heading,
-  `[label](url)` as a link, `[[Page|alias]]` as "alias". Moving the caret into an element (or selecting it)
-  reveals its markers in a faint color, so they can be edited; heading, quote, list and rule markers reveal
-  per line; code blocks, tables and front matter reveal as a whole block.
+- Syntax is hidden: `**bold**` shows as **bold**, `## Title` as a large heading, `[label](url)` as a link,
+  `[[Page|alias]]` as "alias".
+  - **By default, marks stay hidden even at the caret.** Once text is formatted, only the formatting shows (see
+    "Hidden marks"). Block syntax still opens for editing: tables, pictures and rules show their source at the
+    caret, and code fences on their own line.
+  - **Optional Obsidian behavior.** With View → "Show Markdown marks at the caret" (`showMarksAtCaret`), moving
+    the caret into an element (or selecting it) reveals its markers in a faint color. Heading, quote, list and
+    rule markers then reveal per line; code blocks, tables and front matter reveal as a whole block.
 - Widgets: bullets become dots, `- [ ]` becomes a clickable checkbox (checked tasks are struck through),
   `> ` becomes a quote bar, `---` a horizontal rule, `![alt|300](img.png)` the image (optional width as in
   Obsidian), pipe tables a rendered grid. Clicking a table cell or an image moves the caret there and shows
@@ -50,8 +54,24 @@ caret/selection moved ──► RevealRegion(old) ∪ RevealRegion(new) ──�
   *replacements* (hidden or drawn as widgets unless revealed); the rest are styles that always apply.
   Every span carries a reveal range; it shows as source when the caret/selection touches that range
   (`IsRevealedBy`, inclusive at both ends so a caret right after `**` reveals it).
-- **Hidden text** is a `VisualLineElement` whose run is a zero-width `TextEmbeddedObject`; it is one caret stop,
-  which never matters because the caret's element is always revealed.
+- **Hidden text** is a `VisualLineElement` whose run is a zero-width `TextEmbeddedObject`.
+- **Hidden marks** (`LiveMarkup.Editing.cs` rules, applied by `LivePreview.HiddenMarks.cs`). With marks hidden
+  at the caret, their positions become invisible traps, so the editor keeps the caret and edits out of them:
+  - **Caret.** After every move, an empty caret snaps out of a line's hidden prefix (`## `, `- [ ] `, `> `) to
+    `ProseStart`, and out of the inside of a mark (`SnapCaret`). Home therefore lands at the start of the text.
+  - **Arrow keys.** ← and → repeat the move when the caret only crossed hidden marks (no visible movement);
+    at the end of a line the last position on it is kept. ← at the start of a heading's or list item's text
+    goes to the previous line.
+  - **Backspace and Delete.** They skip hidden marks and delete the visible character beyond them. Deleting the
+    only character of a formatted run removes its marks too, so no stray `****` is left. Backspace at the start
+    of a heading, quote or list item removes that prefix; after a hidden inline mark at the line start, it
+    joins the lines.
+  - **Enter.** At the end of formatted text it steps past the closing marks (the new line isn't formatted). At
+    the start, it steps before the opening marks. Inside, it closes the marks before the break and reopens
+    them after it (`**bo**` / `**ld**`). `EditorHost` calls `PrepareEnter` before list continuation.
+
+  Which spans stay hidden: replacement spans except tables, pictures, rules and multi-line ("block") marks
+  (`HidesAtCaret`). The decision is `IsRevealedWithHiddenMarks`.
 - **Tables** span several lines, so their element covers multiple document lines. AvalonEdit requires the
   lines under such an element to be collapsed (as folding does); `LivePreview` collapses them when it builds the
   widget and uncollapses them when the caret enters the table or an edit touches it.

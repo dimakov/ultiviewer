@@ -63,6 +63,7 @@ public partial class EditorHost
 
         var settings = _vm.Settings;
         var live = EffectiveMode == ViewMode.Live;
+        _live.HideMarks = !settings.ShowMarksAtCaret;
         Editor.FontFamily = live ? _live.Styles.TextFont : Font(settings.EditorFontFamily, "Consolas");
         Editor.WordWrap = live || settings.WordWrap;
         Editor.ShowLineNumbers = !live && settings.ShowLineNumbers;
