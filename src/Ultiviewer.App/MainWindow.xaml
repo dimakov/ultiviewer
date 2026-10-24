@@ -19,7 +19,7 @@
     </Window.Resources>
 
     <DockPanel>
-        <Menu DockPanel.Dock="Top">
+        <Menu x:Name="MainMenu" DockPanel.Dock="Top">
             <MenuItem Header="_File">
                 <MenuItem Header="New _notebook…" Command="{Binding NewNotebookCommand}" />
                 <MenuItem Header="Open folder as note_book…" Command="{Binding OpenNotebookFolderCommand}" />
@@ -202,7 +202,8 @@
                 <MenuItem Header="_Close notebook" Command="{Binding CloseNotebookCommand}" />
             </MenuItem>
             <MenuItem Header="_Help">
-                <MenuItem Header="_Keyboard shortcuts" Command="{Binding OpenSettingsCommand}" />
+                <MenuItem Header="_Command palette…" Command="{Binding ShowCommandPaletteCommand}" InputGestureText="Ctrl+Shift+P" />
+                <MenuItem Header="_Keyboard shortcuts" Command="{Binding OpenSettingsCommand}" CommandParameter="shortcuts" />
                 <MenuItem Header="Open the error _log" Click="OnOpenErrorLog" />
                 <Separator />
                 <MenuItem Header="_About Ultiviewer" Click="OnAbout" />

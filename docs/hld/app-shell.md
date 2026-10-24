@@ -11,10 +11,10 @@ Stored in `%APPDATA%\Ultiviewer\settings.json` (camelCase JSON; unknown or broke
 `Services/KeyboardShortcuts.cs` owns every shortcut:
 
 - **Application commands** (new page, save, tabs, zoom, view mode, go to page, settings…) are bound as window `KeyBinding`s in code (`BindApplicationCommands`).
-- **Editor commands** are `EditorCommands` routed commands; their gestures are replaced from overrides at startup (`ApplyEditorOverrides`) before the editor exists.
-- Overrides: `settings.json → "shortcuts": { "<Name>": "Ctrl+Alt+D" }`, several gestures separated by `|`, `""` removes the shortcut. Names are listed in Settings → Keyboard shortcuts. Invalid gestures are logged and ignored.
+- **Editor commands** are `EditorCommands` routed commands; `ApplyEditorOverrides` sets their gestures from the overrides at startup and again after Settings (the editor reads `InputGestures` on every key press).
+- Overrides: `settings.json → "shortcuts": { "<Name>": "Ctrl+Alt+D" }`, several gestures separated by `|`, `""` removes the shortcut. Settings → Keyboard shortcuts edits them (press the new keys, conflicts marked) and applies them without a restart; see `command-palette.md`. Invalid gestures are logged and ignored.
 - AvalonEdit's own bindings that clash with our **default** gestures stay removed even after a remap, so e.g. Ctrl+D never silently deletes a line.
-- Menu `InputGestureText` shows the defaults.
+- Menu `InputGestureText` is refreshed from the registry (`MainWindow.RefreshMenuGestures`), so menus show the current keys.
 
 ## Single instance
 
@@ -44,5 +44,5 @@ then broadcasts `SHCNE_ASSOCCHANGED`. Windows 10/11 don't allow silently taking 
 
 ## Extending safely
 
-- New application shortcut: add a row to `KeyboardShortcuts.AppCommands` (and a menu `InputGestureText`).
+- New application shortcut: add a row to `KeyboardShortcuts.AppCommands`; the menu text, Settings list and command palette follow.
 - New setting: add it to `AppSettings`, `SettingsViewModel` (constructor + `ApplyTo`), the settings window, and wherever it is read.

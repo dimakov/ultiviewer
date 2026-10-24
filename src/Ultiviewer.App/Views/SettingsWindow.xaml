@@ -147,13 +147,44 @@
 
                 <TextBlock Style="{StaticResource Section}" Text="Keyboard shortcuts" />
                 <TextBlock TextWrapping="Wrap" Opacity="0.8"
-                           Text="To change a shortcut, add it to &quot;shortcuts&quot; in settings.json, e.g. &quot;DuplicateLine&quot;: &quot;Ctrl+Alt+D&quot; (an empty value removes it), then restart." />
-                <ListView Margin="0,8,0,20" MaxHeight="320" ItemsSource="{Binding Shortcuts}" AutomationProperties.Name="Keyboard shortcuts">
+                           Text="Click a shortcut and press the new keys. Backspace removes it; the arrow button restores the default. A shortcut used by two commands is marked in red. Changes apply when you save." />
+                <DockPanel Margin="0,8,0,0">
+                    <Button DockPanel.Dock="Right" Content="Restore all defaults" Click="OnResetAllShortcuts" />
+                    <TextBlock DockPanel.Dock="Left" Margin="0,0,8,0" VerticalAlignment="Center" Text="Filter" />
+                    <TextBox x:Name="ShortcutFilterBox" Width="260" HorizontalAlignment="Left" Text="{Binding ShortcutFilter, UpdateSourceTrigger=PropertyChanged}"
+                             AutomationProperties.Name="Filter shortcuts" ToolTip="Filter by command, name or keys" />
+                </DockPanel>
+                <ListView x:Name="ShortcutList" Margin="0,8,0,20" MaxHeight="360" ItemsSource="{Binding ShortcutsView}" AutomationProperties.Name="Keyboard shortcuts">
                     <ListView.View>
                         <GridView>
-                            <GridViewColumn Width="220" Header="Command" DisplayMemberBinding="{Binding Description}" />
-                            <GridViewColumn Width="170" Header="Shortcut" DisplayMemberBinding="{Binding Gesture}" />
-                            <GridViewColumn Width="170" Header="Name in settings.json" DisplayMemberBinding="{Binding Name}" />
+                            <GridViewColumn Width="250" Header="Command">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Description}" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock FontSize="11" Foreground="#D13438" Text="{Binding Conflict}" TextWrapping="Wrap"
+                                                       Visibility="{Binding HasConflict, Converter={StaticResource BoolToVisibility}}" />
+                                            <TextBlock FontSize="11" Opacity="0.65" Text="{Binding Note}" TextWrapping="Wrap"
+                                                       Visibility="{Binding HasNote, Converter={StaticResource BoolToVisibility}}" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn Width="200" Header="Shortcut">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBox Width="150" IsReadOnly="True" IsReadOnlyCaretVisible="False" Text="{Binding Display, Mode=OneWay}"
+                                                     IsEnabled="{Binding IsEditable}" PreviewKeyDown="OnShortcutKeyDown"
+                                                     AutomationProperties.Name="{Binding Description}" ToolTip="Press the new shortcut; Backspace removes it" />
+                                            <Button Margin="4,0,0,0" Padding="4,0" FontFamily="{StaticResource IconFont}" Content="&#xE7A7;"
+                                                    ToolTip="Restore the default" AutomationProperties.Name="Restore the default" Click="OnResetShortcut"
+                                                    Visibility="{Binding IsChanged, Converter={StaticResource BoolToVisibility}}" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn Width="160" Header="Name in settings.json" DisplayMemberBinding="{Binding Name}" />
                         </GridView>
                     </ListView.View>
                 </ListView>

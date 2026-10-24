@@ -42,7 +42,9 @@ public partial class MainWindow : Window
         ResultsSplitter.DragCompleted += (_, _) => _vm.Session.ResultsHeight = ResultsRow.ActualHeight;
         PreviewKeyDown += OnWindowPreviewKeyDown;
         Services.KeyboardShortcuts.BindApplicationCommands(this, vm, vm.Settings.Shortcuts);
+        RefreshMenuGestures(MainMenu);
         _vm.SettingsRequested += ShowSettings;
+        _vm.CommandPaletteRequested += ShowCommandPalette;
         _vm.HistoryRequested += ShowHistory;
         _vm.QuickCaptureRequested += ShowQuickCapture;
         _vm.ExportRequested += request => new Views.ExportWindow(request) { Owner = this }.Show();
@@ -158,14 +160,21 @@ public partial class MainWindow : Window
         }
     }
 
-    private void ShowSettings()
+    private void ShowSettings(string? section)
     {
         var settings = new SettingsViewModel(_vm.Settings, _vm.Notebooks.Select(n => (n.Path, n.Name)));
-        if (new Views.SettingsWindow(settings) { Owner = this }.ShowDialog() == true)
+        var window = new Views.SettingsWindow(settings) { Owner = this };
+        if (section == "shortcuts")
+        {
+            window.Loaded += (_, _) => window.ShowShortcuts();
+        }
+
+        if (window.ShowDialog() == true)
         {
             settings.ApplyTo(_vm.Settings);
             _vm.Settings.Save();
             _vm.ReloadSettingsIntoView();
+            ApplyShortcuts();
         }
     }
 
@@ -424,11 +433,14 @@ public partial class MainWindow : Window
 
     private void OnGoMenuOpened(object sender, RoutedEventArgs e)
     {
-        if (!ReferenceEquals(e.OriginalSource, GoMenu))
+        if (ReferenceEquals(e.OriginalSource, GoMenu))
         {
-            return;
+            BuildGoMenu();
         }
+    }
 
+    private void BuildGoMenu()
+    {
         GoMenu.Items.Clear();
         GoMenu.Items.Add(new MenuItem { Header = "Go to _page…", Command = _vm.QuickOpenCommand, InputGestureText = "Ctrl+E" });
         GoMenu.Items.Add(new MenuItem { Header = "Find in notebooks…", InputGestureText = "Ctrl+Shift+F" });
@@ -465,6 +477,7 @@ public partial class MainWindow : Window
 
         recent.IsEnabled = recent.Items.Count > 0;
         GoMenu.Items.Add(recent);
+        RefreshMenuGestures(GoMenu);
     }
 
     private MenuItem PageItem(string path)
@@ -480,11 +493,14 @@ public partial class MainWindow : Window
 
     private void OnTemplatesMenuOpened(object sender, RoutedEventArgs e)
     {
-        if (!ReferenceEquals(e.OriginalSource, TemplatesMenu))
+        if (ReferenceEquals(e.OriginalSource, TemplatesMenu))
         {
-            return;
+            BuildTemplatesMenu();
         }
+    }
 
+    private void BuildTemplatesMenu()
+    {
         TemplatesMenu.Items.Clear();
         foreach (var template in _vm.TemplatesForCurrentNotebook())
         {

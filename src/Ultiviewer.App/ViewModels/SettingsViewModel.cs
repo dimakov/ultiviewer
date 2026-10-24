@@ -1,4 +1,5 @@
-using System.Windows.Media;
+using System.ComponentModel;
+using System.Windows.Data;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Ultiviewer.App.Services;
 using Ultiviewer.Core.Files;
@@ -40,6 +41,12 @@ public sealed partial class SettingsViewModel : ObservableObject
         _dateFormat = settings.DateFormat;
         _timeFormat = settings.TimeFormat;
         Shortcuts = KeyboardShortcuts.All(settings.Shortcuts);
+        KeyboardShortcuts.FindConflicts(Shortcuts);
+        ShortcutsView = CollectionViewSource.GetDefaultView(Shortcuts);
+        ShortcutsView.Filter = row => ShortcutFilter.Trim() is not { Length: > 0 } filter
+            || row is ShortcutRow r && (r.Description.Contains(filter, StringComparison.CurrentCultureIgnoreCase)
+                || r.Name.Contains(filter, StringComparison.OrdinalIgnoreCase)
+                || r.Display.Contains(filter, StringComparison.OrdinalIgnoreCase));
         IsAssociated = FileAssociation.IsRegistered();
     }
 
@@ -56,7 +63,37 @@ public sealed partial class SettingsViewModel : ObservableObject
     /// <summary>Installed fonts, monospaced ones first (they suit an editor).</summary>
     public IReadOnlyList<string> Fonts { get; } = Fonts_();
 
-    public IReadOnlyList<ShortcutEntry> Shortcuts { get; }
+    public IReadOnlyList<ShortcutRow> Shortcuts { get; }
+
+    /// <summary>The shortcut list as shown: filtered by command, name or keys.</summary>
+    public ICollectionView ShortcutsView { get; }
+
+    [ObservableProperty]
+    private string _shortcutFilter = "";
+
+    partial void OnShortcutFilterChanged(string value) => ShortcutsView.Refresh();
+
+    /// <summary>Gives a command a new shortcut ("" removes it) and re-marks conflicts.</summary>
+    public void SetShortcut(ShortcutRow row, string gesture)
+    {
+        if (row.IsEditable)
+        {
+            row.Gesture = gesture;
+            KeyboardShortcuts.FindConflicts(Shortcuts);
+        }
+    }
+
+    public void ResetShortcut(ShortcutRow row) => SetShortcut(row, row.DefaultGesture);
+
+    public void ResetAllShortcuts()
+    {
+        foreach (var row in Shortcuts.Where(r => r.IsEditable))
+        {
+            row.Gesture = row.DefaultGesture;
+        }
+
+        KeyboardShortcuts.FindConflicts(Shortcuts);
+    }
 
     /// <summary>Notebooks for daily notes: path → name ("" = the first notebook).</summary>
     public IReadOnlyList<KeyValuePair<string, string>> Notebooks { get; }
@@ -197,6 +234,12 @@ public sealed partial class SettingsViewModel : ObservableObject
         settings.KeepRunningInTray = KeepRunningInTray;
         settings.DateFormat = DatePreview == "Invalid format" ? "yyyy-MM-dd" : DateFormat;
         settings.TimeFormat = DatePreview == "Invalid format" ? "HH:mm" : TimeFormat;
+
+        // Only shortcuts that differ from the defaults are stored; unknown names typed into settings.json stay.
+        var known = Shortcuts.Select(r => r.Name).ToHashSet(StringComparer.Ordinal);
+        settings.Shortcuts = settings.Shortcuts.Where(p => !known.Contains(p.Key))
+            .Concat(Shortcuts.Where(r => r.IsEditable && r.IsChanged).Select(r => KeyValuePair.Create(r.Name, r.Gesture)))
+            .ToDictionary(p => p.Key, p => p.Value);
     }
 
     private static IReadOnlyList<string> Fonts_()

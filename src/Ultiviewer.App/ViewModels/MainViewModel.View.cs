@@ -96,11 +96,17 @@ public sealed partial class MainViewModel
         OnPropertyChanged(nameof(IsThemeDark));
     }
 
-    /// <summary>Asks the view to show the settings window.</summary>
-    public event Action? SettingsRequested;
+    /// <summary>Asks the view to show the settings window, optionally at a section ("shortcuts").</summary>
+    public event Action<string?>? SettingsRequested;
 
     [RelayCommand]
-    private void OpenSettings() => SettingsRequested?.Invoke();
+    private void OpenSettings(string? section) => SettingsRequested?.Invoke(section);
+
+    /// <summary>Asks the view to show the command palette (Ctrl+Shift+P).</summary>
+    public event Action? CommandPaletteRequested;
+
+    [RelayCommand]
+    private void ShowCommandPalette() => CommandPaletteRequested?.Invoke();
 
     /// <summary>Re-reads all settings after the settings window saved them.</summary>
     public void ReloadSettingsIntoView()

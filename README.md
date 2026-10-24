@@ -21,6 +21,7 @@ Notes are ordinary `.md` files in ordinary folders, so Explorer, git, OneDrive a
 - **Task dates and reminders** (Obsidian Tasks syntax): due/scheduled dates, priorities, `🔁 every week` recurrence and `⏰` reminders; the To-do pane groups Overdue / Today / Upcoming; completing a recurring task creates the next one; reminder cards with Open / Done / Snooze.
 - **Export and print**: a page or a whole section as one self-contained HTML file or a PDF (A4/Letter, margins), or printed; math, diagrams, images and page breaks (`<!-- pagebreak -->`) included.
 - **Backlinks**: a Links pane with the pages linking here, this page's links (broken ones flagged) and unlinked mentions you can link with one click; `[[Page#` completes headings.
+- **Command palette** (Ctrl+Shift+P): find and run any menu command by name, with its shortcut; recent commands first. **Shortcut editor** in Settings: press the new keys, conflicts are flagged, changes apply at once.
 - **Notepad++ tools**: find/replace bar with regex, go to line, duplicate/move/delete/join/sort lines, case conversion, bookmarks, column selection, smart highlighting.
 - **OneNote conveniences**: paste screenshots, drop files as attachments, Ctrl+1 to-dos and a To-do pane across notebooks, Tags pane, templates, favorites and recent pages, list continuation, `[[` completion, links that follow renames and moves.
 
