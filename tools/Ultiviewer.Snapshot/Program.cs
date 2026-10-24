@@ -153,6 +153,18 @@ internal static class Program
             editor.TextArea.PerformTextInput(typed);
         }
 
+        if (step.Command is { } commandName)
+        {
+            var command = typeof(Ultiviewer.App.Editor.EditorCommands).GetProperty(commandName)?.GetValue(null) as RoutedUICommand
+                ?? throw new InvalidOperationException($"no editor command {commandName}");
+            command.Execute(null, editor.TextArea);
+        }
+
+        if (step.LeftTab is { } leftTab)
+        {
+            window.LeftTabs.SelectedIndex = leftTab;
+        }
+
         if (step.Key is { } keyName)
         {
             PressKey(editor, Enum.Parse<Key>(keyName, ignoreCase: true));
@@ -468,6 +480,12 @@ internal sealed class Step
     public string? CaptureWindow { get; set; }
 
     public string? Key { get; set; }
+
+    /// <summary>An <c>EditorCommands</c> property name to run on the focused editor (e.g. "FoldAll", "MoveLineUp").</summary>
+    public string? Command { get; set; }
+
+    /// <summary>Selects a tab of the left panel (0 Notebooks, 1 Tags, 2 To-do, 3 Outline).</summary>
+    public int? LeftTab { get; set; }
 
     /// <summary>Class name of a visual in the text view to click (see <see cref="Program"/>), with <see cref="ClickIndex"/>.</summary>
     public string? Click { get; set; }
