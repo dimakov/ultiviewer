@@ -39,6 +39,8 @@ internal static class Program
 
         // A plain Application with the app's resources: Ultiviewer's App class would run its real startup
         // (single instance, a visible main window) as soon as the dispatcher runs.
+        // Awaits in the app resume on this (UI) thread, as they do when the app runs normally.
+        SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext(Dispatcher.CurrentDispatcher));
         var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
         app.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri("pack://application:,,,/Ultiviewer;component/AppResources.xaml") });
         app.DispatcherUnhandledException += (_, e) =>
@@ -192,6 +194,36 @@ internal static class Program
         {
             Console.WriteLine("captured to " + vm.Capture(capture, step.CaptureTarget));
             Pump(300);
+        }
+
+        if (step.Export is { } export)
+        {
+            var request = vm.Primary.ActiveTab is null ? null : new ExportRequest(vm.ActiveTab!.Title,
+                [new Ultiviewer.Core.Markdown.ExportPage(vm.ActiveTab.Title, vm.ActiveTab.Document.Text, Path.GetDirectoryName(vm.ActiveTab.Path))], false, false);
+            var exporter = new Ultiviewer.App.Views.ExportWindow(request!)
+            {
+                ShowActivated = false,
+                ShowInTaskbar = false,
+                WindowStartupLocation = WindowStartupLocation.Manual,
+                Left = -32000,
+                Top = -32000,
+            };
+            exporter.Show();
+            var html = exporter.SaveHtmlAsync(export + ".html");
+            try
+            {
+                Wait(html, 30000);
+            }
+            catch (TimeoutException)
+            {
+                Console.WriteLine("export status: " + exporter.Status.Text);
+                throw;
+            }
+
+            var pdf = exporter.SavePdfAsync(export + ".pdf");
+            Wait(pdf, 30000);
+            Console.WriteLine($"exported {export}.html and .pdf (pdf ok: {pdf.Result})");
+            exporter.Close();
         }
 
         if (step.ReminderWindow is { } reminderShot)
@@ -384,6 +416,23 @@ internal static class Program
         encoder.Save(stream);
     }
 
+    /// <summary>Pumps the dispatcher until a task finishes (or the timeout passes).</summary>
+    private static void Wait(Task task, int timeoutMs)
+    {
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        while (!task.IsCompleted && watch.ElapsedMilliseconds < timeoutMs)
+        {
+            Pump(100);
+        }
+
+        if (!task.IsCompleted)
+        {
+            throw new TimeoutException("export did not finish");
+        }
+
+        task.GetAwaiter().GetResult();
+    }
+
     /// <summary>Runs the dispatcher (layout, rendering, timers) for a while.</summary>
     private static void Pump(int milliseconds)
     {
@@ -487,6 +536,9 @@ internal sealed class Step
     public string? Capture { get; set; }
 
     public Ultiviewer.Core.Capture.CaptureTarget CaptureTarget { get; set; }
+
+    /// <summary>Exports the active page through the export window: writes this path + ".html" and + ".pdf".</summary>
+    public string? Export { get; set; }
 
     /// <summary>Renders a reminder card for the first task with a reminder (off-screen, not activated).</summary>
     public string? ReminderWindow { get; set; }
