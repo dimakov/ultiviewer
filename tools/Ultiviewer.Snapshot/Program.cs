@@ -194,6 +194,17 @@ internal static class Program
             Pump(300);
         }
 
+        if (step.ReminderWindow is { } reminderShot)
+        {
+            var task = vm.Tasks.FirstOrDefault(t => t.Info.Reminder is not null) ?? throw new InvalidOperationException("no task with a reminder");
+            var card = new Ultiviewer.App.Views.ReminderWindow(task, vm) { Topmost = false, Left = -32000, Top = -32000 };
+            card.Show();
+            Pump(300);
+            Save(card, reminderShot);
+            Console.WriteLine($"saved {reminderShot}");
+            card.Close();
+        }
+
         if (step.CaptureWindow is { } captureShot)
         {
             var quick = new Ultiviewer.App.Views.QuickCaptureWindow(vm)
@@ -261,6 +272,7 @@ internal static class Program
             {
                 "caret" => $"caret {editor.CaretOffset} line {editor.TextArea.Caret.Line} col {editor.TextArea.Caret.Column}",
                 "margin" => $"textview margin {editor.TextArea.TextView.Margin}",
+                "tasks" => string.Join(Environment.NewLine, vm.Tasks.Select(t => $"  [{t.Group}] {t.Description} | {t.DueLabel} {t.Extras}")),
                 "groups" => $"split={vm.IsSplit} vertical={vm.SplitVertical} focused={vm.FocusedGroup.Index} "
                     + $"first=[{string.Join(", ", vm.Primary.Tabs.Select(t => (t == vm.Primary.ActiveTab ? "*" : "") + t.Title + ":" + vm.Primary.ModeOf(t)))}] "
                     + $"second=[{string.Join(", ", vm.Secondary.Tabs.Select(t => (t == vm.Secondary.ActiveTab ? "*" : "") + t.Title + ":" + vm.Secondary.ModeOf(t)))}] active={vm.ActiveTab?.Title}",
@@ -475,6 +487,9 @@ internal sealed class Step
     public string? Capture { get; set; }
 
     public Ultiviewer.Core.Capture.CaptureTarget CaptureTarget { get; set; }
+
+    /// <summary>Renders a reminder card for the first task with a reminder (off-screen, not activated).</summary>
+    public string? ReminderWindow { get; set; }
 
     /// <summary>Renders the quick-note window (off-screen, not activated) to this PNG.</summary>
     public string? CaptureWindow { get; set; }
