@@ -111,7 +111,7 @@ public sealed partial class MainViewModel
         }
 
         ThemeService.Instance.Apply(Settings.Theme);
-        foreach (var tab in Tabs)
+        foreach (var tab in OpenTabs)
         {
             UpdateNotebookPageFlag(tab); // autosave rules may have changed
         }

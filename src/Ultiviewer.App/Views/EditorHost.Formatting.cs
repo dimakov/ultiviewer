@@ -57,7 +57,7 @@ public partial class EditorHost
             return;
         }
 
-        var show = (_vm?.Settings.ShowFormatBar ?? true) && _current is { IsMarkdown: true } tab && tab.ViewMode != ViewMode.Preview;
+        var show = (_vm?.Settings.ShowFormatBar ?? true) && _current is { IsMarkdown: true } && EffectiveMode != ViewMode.Preview;
         _formatBar.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
         if (show)
         {

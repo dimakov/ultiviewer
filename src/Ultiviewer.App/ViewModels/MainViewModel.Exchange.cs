@@ -38,7 +38,7 @@ public sealed partial class MainViewModel
         }
 
         // Unsaved edits of pages in this folder go into the export.
-        foreach (var tab in Tabs.Where(t => t.IsDirty && t.Path is not null && FileSystemMoves.IsSameOrInside(t.Path, target.Path)).ToList())
+        foreach (var tab in OpenTabs.Where(t => t.IsDirty && t.Path is not null && FileSystemMoves.IsSameOrInside(t.Path, target.Path)).ToList())
         {
             SaveTab(tab, interactive: true);
         }

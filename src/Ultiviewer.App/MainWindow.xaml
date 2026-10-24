@@ -7,15 +7,6 @@
         Icon="pack://application:,,,/Ultiviewer;component/Assets/ultiviewer.ico"
         AllowDrop="True" Drop="OnWindowDrop">
     <Window.Resources>
-        <Style x:Key="ViewModeButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Padding" Value="10,3" />
-            <Setter Property="Margin" Value="1,0" />
-            <Setter Property="MinHeight" Value="0" />
-            <Setter Property="MinWidth" Value="0" />
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="Focusable" Value="False" />
-        </Style>
         <Style x:Key="StatusButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
@@ -160,6 +151,11 @@
                 <MenuItem Header="_Preview only" Command="{Binding SetViewModeCommand}" CommandParameter="Preview" />
                 <MenuItem Header="Cycle view mode" Command="{Binding CycleViewModeCommand}" InputGestureText="Ctrl+Shift+V" />
                 <Separator />
+                <MenuItem Header="Two editors side _by side" Command="{Binding SplitRightCommand}" InputGestureText="Ctrl+\" />
+                <MenuItem Header="Two editors stac_ked" Command="{Binding SplitDownCommand}" />
+                <MenuItem Header="Single _editor" Command="{Binding UnsplitCommand}" />
+                <MenuItem Header="Switch to the _other editor" Command="{Binding FocusOtherGroupCommand}" InputGestureText="Ctrl+Shift+\" />
+                <Separator />
                 <MenuItem Header="_Word wrap" IsCheckable="True" IsChecked="{Binding WordWrap}" />
                 <MenuItem Header="_Line numbers" IsCheckable="True" IsChecked="{Binding ShowLineNumbers}" />
                 <MenuItem Header="Show _whitespace" IsCheckable="True" IsChecked="{Binding ShowWhitespace}" />
@@ -274,33 +270,13 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition x:Name="ResultsRow" Height="0" />
                 </Grid.RowDefinitions>
-                <Grid Grid.Row="0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <views:TabStrip x:Name="Tabs" />
-                    <StackPanel Grid.Column="1" Margin="8,0,8,0" VerticalAlignment="Center" Orientation="Horizontal"
-                                Visibility="{Binding ActiveViewMode, Converter={StaticResource NullToVisibility}}">
-                        <Button Style="{StaticResource ViewModeButton}" Content="Live" ToolTip="Formatted editing: Markdown shows as it will look, syntax appears at the caret (Ctrl+Shift+V cycles)"
-                                Command="{Binding SetViewModeCommand}" CommandParameter="Live"
-                                Background="{Binding ActiveViewMode, Converter={StaticResource SelectedValueBrush}, ConverterParameter=Live}" />
-                        <Button Style="{StaticResource ViewModeButton}" Content="Edit" ToolTip="Markdown source only (Ctrl+Shift+V cycles)"
-                                Command="{Binding SetViewModeCommand}" CommandParameter="Edit"
-                                Background="{Binding ActiveViewMode, Converter={StaticResource SelectedValueBrush}, ConverterParameter=Edit}" />
-                        <Button Style="{StaticResource ViewModeButton}" Content="Split" ToolTip="Editor and preview side by side (Ctrl+Shift+V cycles)"
-                                Command="{Binding SetViewModeCommand}" CommandParameter="Split"
-                                Background="{Binding ActiveViewMode, Converter={StaticResource SelectedValueBrush}, ConverterParameter=Split}" />
-                        <Button Style="{StaticResource ViewModeButton}" Content="Preview" ToolTip="Preview only (Ctrl+Shift+V cycles)"
-                                Command="{Binding SetViewModeCommand}" CommandParameter="Preview"
-                                Background="{Binding ActiveViewMode, Converter={StaticResource SelectedValueBrush}, ConverterParameter=Preview}" />
-                    </StackPanel>
+                <!-- One or two editor panes; MainWindow.ArrangePanes lays them out side by side or stacked. -->
+                <Grid x:Name="EditorArea" Grid.Row="0" Grid.RowSpan="2">
+                    <views:EditorPane x:Name="PrimaryPane" />
+                    <GridSplitter x:Name="PaneSplitter" Background="#22808080" Focusable="False" Visibility="Collapsed"
+                                  ResizeBehavior="PreviousAndNext" DragCompleted="OnPaneSplitterDragCompleted" />
+                    <views:EditorPane x:Name="SecondaryPane" Visibility="Collapsed" />
                 </Grid>
-                <views:EditorHost x:Name="EditorView" Grid.Row="1"
-                                  Visibility="{Binding HasTabs, Converter={StaticResource BoolToVisibility}}" />
-                <TextBlock Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.6"
-                           Text="Select a page in the tree, or press Ctrl+N for a new page"
-                           Visibility="{Binding HasTabs, Converter={StaticResource InverseBoolToVisibility}}" />
                 <GridSplitter x:Name="ResultsSplitter" Grid.Row="2" Height="5" HorizontalAlignment="Stretch" Background="Transparent"
                               ResizeBehavior="PreviousAndNext" ResizeDirection="Rows" Focusable="False"
                               Visibility="{Binding IsSearchPanelOpen, Converter={StaticResource BoolToVisibility}}" />

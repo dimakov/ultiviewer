@@ -22,7 +22,7 @@ public partial class EditorHost
     private DateTime _ignoreEditorScrollUntil;
     private bool _editorScrollQueued;
 
-    private ViewMode EffectiveMode => _current is { IsMarkdown: true } tab ? tab.ViewMode : ViewMode.Edit;
+    private ViewMode EffectiveMode => _current is { IsMarkdown: true } tab ? Group?.ModeOf(tab) ?? tab.ViewMode : ViewMode.Edit;
 
     /// <summary>Edit and Live show only the editor; Split and Preview need the rendered preview.</summary>
     private bool PreviewHidden => EffectiveMode is ViewMode.Edit or ViewMode.Live;
@@ -254,7 +254,7 @@ public partial class EditorHost
             return;
         }
 
-        if (tab.ViewMode == ViewMode.Preview)
+        if (EffectiveMode == ViewMode.Preview)
         {
             _vm.SetTabViewMode(tab, ViewMode.Split);
         }

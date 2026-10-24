@@ -78,7 +78,7 @@ public sealed partial class MainViewModel
             moves.Add(new PathMove(before.ChildFolder!, Path.Combine(folder, newTitle)));
         }
 
-        var openTexts = Tabs.Where(t => t.Path is not null).ToDictionary(t => t.Path!, t => t.Document.Text, StringComparer.OrdinalIgnoreCase);
+        var openTexts = OpenTabs.Where(t => t.Path is not null).ToDictionary(t => t.Path!, t => t.Document.Text, StringComparer.OrdinalIgnoreCase);
         var roots = Notebooks.Select(n => n.Path).ToList();
         var plan = await Task.Run(() =>
         {
@@ -134,7 +134,7 @@ public sealed partial class MainViewModel
     /// <summary>Rewrites one page: through its tab (undoable, then saved as usual) or directly on disk.</summary>
     private void ApplyLinkUpdate(string path, IReadOnlyList<PathMove> moves, string? oldTitle, string? newTitle)
     {
-        if (Tabs.FirstOrDefault(t => t.IsAt(path)) is { } tab)
+        if (OpenTabs.FirstOrDefault(t => t.IsAt(path)) is { } tab)
         {
             var (text, count) = LinkUpdater.Rewrite(tab.Document.Text, path, moves, oldTitle, newTitle);
             if (count > 0)
@@ -315,7 +315,7 @@ public sealed partial class MainViewModel
     /// <summary>Ticks or unticks a task in its page (through the open tab, or directly in the file).</summary>
     public void ToggleTaskInPage(TaskEntry task)
     {
-        if (Tabs.FirstOrDefault(t => t.IsAt(task.Path)) is { } tab)
+        if (OpenTabs.FirstOrDefault(t => t.IsAt(task.Path)) is { } tab)
         {
             ToggleTaskAtLine(tab, task.Line);
             if (AutosaveEligible(tab))

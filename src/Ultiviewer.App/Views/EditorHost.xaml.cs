@@ -16,14 +16,20 @@ using Ultiviewer.Core.Settings;
 namespace Ultiviewer.App.Views;
 
 /// <summary>
-/// Hosts the single AvalonEdit editor. Switching tabs swaps the editor's <see cref="TextDocument"/> (each tab
-/// keeps its own text and undo history) and saves/restores caret, selection and scroll position per tab.
+/// Hosts one editor pane's AvalonEdit editor, showing its <see cref="Group"/>'s active tab. Switching tabs swaps
+/// the editor's <see cref="TextDocument"/> (each document keeps its own text and undo history) and saves/restores
+/// caret, selection and scroll position per tab and per editor, so a document open in both editors keeps two
+/// positions. Requests aimed at "the editor" (focus, go to line, select) only reach the focused group's host.
 /// </summary>
 public partial class EditorHost : UserControl
 {
     private MainViewModel? _vm;
+    private EditorGroup? _group;
     private DocumentTabViewModel? _current;
     private (int Caret, double Vertical)? _reloadState;
+    private readonly Dictionary<DocumentTabViewModel, ViewState> _viewStates = [];
+
+    private readonly record struct ViewState(int Caret, int SelectionStart, int SelectionLength, double Vertical, double Horizontal);
 
     public EditorHost()
     {
@@ -41,6 +47,14 @@ public partial class EditorHost : UserControl
         Editor.PreviewMouseWheel += OnEditorMouseWheel;
         Editor.AddHandler(Hyperlink.RequestNavigateEvent, new System.Windows.Navigation.RequestNavigateEventHandler(OnRequestNavigate));
         Editor.ContextMenu = BuildContextMenu();
+        PreviewMouseDown += (_, _) => ClaimFocus();
+        IsKeyboardFocusWithinChanged += (_, e) =>
+        {
+            if (e.NewValue is true)
+            {
+                ClaimFocus();
+            }
+        };
         InitializePreview();
         InitializeCommands();
         InitializeConveniences();
@@ -51,6 +65,71 @@ public partial class EditorHost : UserControl
     }
 
     public TextEditor TextEditor => Editor;
+
+    /// <summary>The tabs this editor shows; set by the pane that contains it.</summary>
+    public EditorGroup? Group
+    {
+        get => _group;
+        set
+        {
+            if (_group == value)
+            {
+                return;
+            }
+
+            if (_group is not null)
+            {
+                _group.PropertyChanged -= OnGroupPropertyChanged;
+                _group.ModeChanged -= OnGroupModeChanged;
+                _group.Tabs.CollectionChanged -= OnGroupTabsChanged;
+            }
+
+            _group = value;
+            if (value is not null)
+            {
+                value.PropertyChanged += OnGroupPropertyChanged;
+                value.ModeChanged += OnGroupModeChanged;
+                value.Tabs.CollectionChanged += OnGroupTabsChanged;
+            }
+
+            SwitchTo(value?.ActiveTab);
+        }
+    }
+
+    private bool IsFocusedGroup => _vm is not null && _group is not null && _vm.FocusedGroup == _group;
+
+    private void ClaimFocus()
+    {
+        if (_vm is not null && _group is not null && _vm.FocusedGroup != _group)
+        {
+            _vm.FocusedGroup = _group;
+        }
+    }
+
+    private void OnGroupPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(EditorGroup.ActiveTab))
+        {
+            SwitchTo(_group!.ActiveTab);
+        }
+    }
+
+    private void OnGroupModeChanged(DocumentTabViewModel tab)
+    {
+        if (tab == _current)
+        {
+            ApplyViewMode();
+            UpdateFormatBar();
+        }
+    }
+
+    private void OnGroupTabsChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+    {
+        foreach (var gone in _viewStates.Keys.Where(t => _group is null || !_group.Tabs.Contains(t)).ToList())
+        {
+            _viewStates.Remove(gone);
+        }
+    }
 
     public DocumentTabViewModel? CurrentTab => _current;
 
@@ -77,7 +156,6 @@ public partial class EditorHost : UserControl
     {
         if (_vm is not null)
         {
-            _vm.PropertyChanged -= OnViewModelPropertyChanged;
             _vm.EditorFocusRequested -= FocusEditor;
             _vm.GoToLineRequested -= GoToLine;
             _vm.TabReloading -= OnTabReloading;
@@ -94,7 +172,6 @@ public partial class EditorHost : UserControl
             return;
         }
 
-        vm.PropertyChanged += OnViewModelPropertyChanged;
         vm.EditorFocusRequested += FocusEditor;
         vm.GoToLineRequested += GoToLine;
         vm.TabReloading += OnTabReloading;
@@ -105,15 +182,7 @@ public partial class EditorHost : UserControl
         vm.SelectRangeRequested += SelectRange;
         ApplySettings();
         ApplyPalette();
-        SwitchTo(vm.ActiveTab);
-    }
-
-    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        if (e.PropertyName == nameof(MainViewModel.ActiveTab))
-        {
-            SwitchTo(_vm!.ActiveTab);
-        }
+        SwitchTo(_group?.ActiveTab);
     }
 
     private void SwitchTo(DocumentTabViewModel? tab)
@@ -170,19 +239,23 @@ public partial class EditorHost : UserControl
             return;
         }
 
+        // This editor's own position for the tab, else the one stored in the tab (session, the other editor).
+        var state = _viewStates.TryGetValue(tab, out var own)
+            ? own
+            : new ViewState(tab.CaretOffset, tab.SelectionStart, tab.SelectionLength, tab.VerticalOffset, tab.HorizontalOffset);
         var length = tab.Document.TextLength;
-        var start = Math.Clamp(tab.SelectionStart, 0, length);
-        Editor.Select(start, Math.Clamp(tab.SelectionLength, 0, length - start));
-        Editor.TextArea.Caret.Offset = Math.Clamp(tab.CaretOffset, 0, length);
-        if (tab.PendingLine is { } line)
+        var start = Math.Clamp(state.SelectionStart, 0, length);
+        Editor.Select(start, Math.Clamp(state.SelectionLength, 0, length - start));
+        Editor.TextArea.Caret.Offset = Math.Clamp(state.Caret, 0, length);
+        if (tab.PendingLine is { } line && IsFocusedGroup)
         {
             tab.PendingLine = null;
             GoToLine(line);
         }
         else
         {
-            Editor.ScrollToVerticalOffset(tab.VerticalOffset);
-            Editor.ScrollToHorizontalOffset(tab.HorizontalOffset);
+            Editor.ScrollToVerticalOffset(state.Vertical);
+            Editor.ScrollToHorizontalOffset(state.Horizontal);
         }
     }
 
@@ -193,6 +266,7 @@ public partial class EditorHost : UserControl
             return;
         }
 
+        _viewStates[_current] = new ViewState(Editor.CaretOffset, Editor.SelectionStart, Editor.SelectionLength, Editor.VerticalOffset, Editor.HorizontalOffset);
         _current.CaretOffset = Editor.CaretOffset;
         _current.SelectionStart = Editor.SelectionStart;
         _current.SelectionLength = Editor.SelectionLength;
@@ -220,6 +294,11 @@ public partial class EditorHost : UserControl
 
     public void FocusEditor()
     {
+        if (!IsFocusedGroup)
+        {
+            return;
+        }
+
         Dispatcher.BeginInvoke(() =>
         {
             Editor.TextArea.Focus();
@@ -229,7 +308,7 @@ public partial class EditorHost : UserControl
 
     public void GoToLine(int lineNumber)
     {
-        if (Editor.Document.LineCount == 0)
+        if (!IsFocusedGroup || Editor.Document.LineCount == 0)
         {
             return;
         }
@@ -245,7 +324,7 @@ public partial class EditorHost : UserControl
     public void SelectRange(int lineNumber, int column, int length)
     {
         var document = Editor.Document;
-        if (lineNumber < 1 || lineNumber > document.LineCount)
+        if (!IsFocusedGroup || lineNumber < 1 || lineNumber > document.LineCount)
         {
             return;
         }
@@ -259,7 +338,7 @@ public partial class EditorHost : UserControl
 
     private void UpdateCaretStatus()
     {
-        if (_vm is null)
+        if (_vm is null || !IsFocusedGroup)
         {
             return;
         }

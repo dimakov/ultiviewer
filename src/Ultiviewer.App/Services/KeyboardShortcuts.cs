@@ -38,6 +38,8 @@ public static class KeyboardShortcuts
         yield return ("GoToPage", "Go to page", "Ctrl+E", vm => vm.QuickOpenCommand);
         yield return ("PageHistory", "Page history", "Ctrl+Shift+H", vm => vm.ShowHistoryCommand);
         yield return ("TodaysNote", "Today's daily note", "Ctrl+Shift+D", vm => vm.OpenTodayCommand);
+        yield return ("SplitEditor", "Two editors side by side", "Ctrl+Oem5", vm => vm.SplitRightCommand);
+        yield return ("FocusOtherEditor", "Switch to the other editor", "Ctrl+Shift+Oem5", vm => vm.FocusOtherGroupCommand);
         yield return ("Settings", "Settings", "Ctrl+OemComma", vm => vm.OpenSettingsCommand);
     }
 

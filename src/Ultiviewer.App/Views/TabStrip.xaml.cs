@@ -5,7 +5,10 @@ using Ultiviewer.App.ViewModels;
 
 namespace Ultiviewer.App.Views;
 
-/// <summary>Notepad++-style tab strip: click to switch, middle-click or ✕ to close, drag to reorder.</summary>
+/// <summary>
+/// Notepad++-style tab strip for one editor group (its DataContext): click to switch, middle-click or ✕ to close,
+/// drag to reorder or onto the other editor's strip to move the tab there.
+/// </summary>
 public partial class TabStrip : UserControl
 {
     private Point _dragStart;
@@ -16,7 +19,10 @@ public partial class TabStrip : UserControl
         InitializeComponent();
     }
 
-    private MainViewModel Vm => (MainViewModel)DataContext;
+    /// <summary>Set by the pane; the strip's DataContext is its <see cref="EditorGroup"/>.</summary>
+    public MainViewModel Vm { get; set; } = null!;
+
+    private EditorGroup Group => (EditorGroup)DataContext;
 
     private static DocumentTabViewModel? TabAt(object source) =>
         source is DependencyObject element ? NotebookTree.FindAncestor<ListBoxItem>(element)?.DataContext as DocumentTabViewModel : null;
@@ -33,7 +39,7 @@ public partial class TabStrip : UserControl
     {
         if ((sender as FrameworkElement)?.DataContext is DocumentTabViewModel tab)
         {
-            Vm.CloseTab(tab);
+            Vm.CloseTab(tab, Group);
         }
     }
 
@@ -41,6 +47,7 @@ public partial class TabStrip : UserControl
     {
         var tab = TabAt(e.OriginalSource);
         _dragCandidate = null;
+        Vm.FocusedGroup = Group; // commands from this strip (and its context menu) act on this editor
         if (tab is null)
         {
             return;
@@ -48,14 +55,14 @@ public partial class TabStrip : UserControl
 
         if (e.ChangedButton == MouseButton.Middle)
         {
-            Vm.CloseTab(tab);
+            Vm.CloseTab(tab, Group);
             e.Handled = true;
         }
         else if (e.ChangedButton == MouseButton.Left && NotebookTree.FindAncestor<Button>(e.OriginalSource as DependencyObject) is null)
         {
             _dragStart = e.GetPosition(List);
             _dragCandidate = tab;
-            Vm.ActiveTab = tab;
+            Group.ActiveTab = tab;
             Dispatcher.BeginInvoke(Vm.FocusEditor, System.Windows.Threading.DispatcherPriority.Input);
         }
     }
@@ -103,10 +110,12 @@ public partial class TabStrip : UserControl
 
     private void OnDrop(object sender, DragEventArgs e)
     {
-        if (e.Data.GetData(typeof(DocumentTabViewModel)) is DocumentTabViewModel dragged && TabAt(e.OriginalSource) is { } target)
+        if (e.Data.GetData(typeof(DocumentTabViewModel)) is DocumentTabViewModel dragged)
         {
-            Vm.MoveTab(dragged, Vm.Tabs.IndexOf(target));
-            Vm.ActiveTab = dragged;
+            var index = TabAt(e.OriginalSource) is { } target ? Group.Tabs.IndexOf(target) : Group.Tabs.Count;
+            Vm.MoveTab(Group, dragged, index);
+            Vm.FocusedGroup = Group;
+            Group.ActiveTab = dragged;
         }
     }
 
@@ -126,6 +135,9 @@ public partial class TabStrip : UserControl
         menu.Items.Add(Item("Close others", vm.CloseOthersCommand, tab));
         menu.Items.Add(Item("Close tabs to the right", vm.CloseToRightCommand, tab));
         menu.Items.Add(Item("Close all", vm.CloseAllCommand));
+        menu.Items.Add(new Separator());
+        menu.Items.Add(Item(vm.IsSplit ? "Open in the other editor too" : "Open in a second editor", vm.OpenInOtherGroupCommand, tab, vm.IsSplit ? null : "Ctrl+\\"));
+        menu.Items.Add(Item(vm.IsSplit ? "Move to the other editor" : "Move to a second editor", vm.MoveToOtherGroupCommand, tab));
         menu.Items.Add(new Separator());
         menu.Items.Add(Item(tab.IsPinned ? "Unpin" : "Pin", vm.TogglePinCommand, tab));
         if (tab.IsPreviewTab)

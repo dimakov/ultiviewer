@@ -23,6 +23,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
         Session = session;
         _dialogs = dialogs;
         _ops = ops;
+        InitializeGroups();
     }
 
     public AppSettings Settings { get; }

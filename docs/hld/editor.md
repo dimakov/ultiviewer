@@ -20,7 +20,7 @@ Opens notebook pages and any other text file in Notepad++-style tabs, edits them
 | `App/ViewModels/DocumentTabViewModel.cs` | One open document: `TextDocument` (own undo stack; dirty = `!UndoStack.IsOriginalFile`), `Format`, `Language`, preview/pinned/deleted flags, known stamp + hash, view state. |
 | `App/ViewModels/MainViewModel.Documents.cs` | Open/save/close/reopen, preview-tab replacement, autosave timers, disk checks, backups, session capture/restore, tab commands. |
 | `App/ViewModels/MainViewModel.View.cs` | Word wrap, line numbers, whitespace, current line, zoom, theme. |
-| `App/Views/EditorHost.xaml(.cs)` | The single `TextEditor`; swaps documents on tab change, restores caret/selection/scroll, applies palette and highlighting, Ctrl+wheel zoom. |
+| `App/Views/EditorHost.xaml(.cs)` | One pane's `TextEditor` (there are two when the window is split, see `split-editors.md`); swaps documents when its group's active tab changes, restores caret/selection/scroll per tab and per editor, applies palette and highlighting, Ctrl+wheel zoom. |
 | `App/Views/TabStrip.xaml(.cs)` | Tabs: italic preview tabs, dirty dot, ✕ / middle-click close, drag to reorder, context menu. |
 | `App/Editor/HighlightingRegistry.cs`, `Editor/Markdown.xshd` | AvalonEdit's bundled languages + our Markdown definition, each in a light and a generated dark variant. |
 | `App/Services/ThemeService.cs` | Applies System/Light/Dark to WPF Fluent `ThemeMode`, tracks Windows theme changes, exposes the editor palette. |
@@ -28,7 +28,7 @@ Opens notebook pages and any other text file in Notepad++-style tabs, edits them
 
 ## Key flows
 
-**Open** — `OpenDocument(path, preview)`: existing tab → activate; binary → status hint (preview) or default app; > 256 MB refused, > 32 MB confirmed; otherwise `TextDocumentFile.Load` → new tab. A single click in the tree opens a *preview tab* (italic) that the next single click replaces; editing, double-click, Enter or "Keep open" makes it permanent.
+**Open** — `OpenDocument(path, preview)`: existing tab (in the focused editor, else the other one) → activate; new documents open in the focused editor; binary → status hint (preview) or default app; > 256 MB refused, > 32 MB confirmed; otherwise `TextDocumentFile.Load` → new tab. A single click in the tree opens a *preview tab* (italic) that the next single click replaces; editing, double-click, Enter or "Keep open" makes it permanent.
 
 **Switch tabs** — `EditorHost` captures the old tab's caret/selection/scroll, assigns `Editor.Document = tab.Document`, applies the tab's highlighting, and restores its view state at `Loaded` priority (after layout).
 

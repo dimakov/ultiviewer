@@ -1,0 +1,41 @@
+<UserControl x:Class="Ultiviewer.App.Views.EditorPane"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="clr-namespace:Ultiviewer.App.Views"
+             x:Name="Root">
+    <Border x:Name="Frame" BorderThickness="0,2,0,0" BorderBrush="Transparent">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <views:TabStrip x:Name="Strip" />
+                <StackPanel Grid.Column="1" Margin="8,0,8,0" VerticalAlignment="Center" Orientation="Horizontal"
+                            Visibility="{Binding Group.ActiveViewMode, ElementName=Root, Converter={StaticResource NullToVisibility}}">
+                    <Button Style="{StaticResource ViewModeButton}" Content="Live" ToolTip="Formatted editing: Markdown shows as it will look, syntax appears at the caret (Ctrl+Shift+V cycles)"
+                            Command="{Binding SetViewModeCommand}" CommandParameter="Live"
+                            Background="{Binding Group.ActiveViewMode, ElementName=Root, Converter={StaticResource SelectedValueBrush}, ConverterParameter=Live}" />
+                    <Button Style="{StaticResource ViewModeButton}" Content="Edit" ToolTip="Markdown source only (Ctrl+Shift+V cycles)"
+                            Command="{Binding SetViewModeCommand}" CommandParameter="Edit"
+                            Background="{Binding Group.ActiveViewMode, ElementName=Root, Converter={StaticResource SelectedValueBrush}, ConverterParameter=Edit}" />
+                    <Button Style="{StaticResource ViewModeButton}" Content="Split" ToolTip="Editor and preview side by side (Ctrl+Shift+V cycles)"
+                            Command="{Binding SetViewModeCommand}" CommandParameter="Split"
+                            Background="{Binding Group.ActiveViewMode, ElementName=Root, Converter={StaticResource SelectedValueBrush}, ConverterParameter=Split}" />
+                    <Button Style="{StaticResource ViewModeButton}" Content="Preview" ToolTip="Preview only (Ctrl+Shift+V cycles)"
+                            Command="{Binding SetViewModeCommand}" CommandParameter="Preview"
+                            Background="{Binding Group.ActiveViewMode, ElementName=Root, Converter={StaticResource SelectedValueBrush}, ConverterParameter=Preview}" />
+                </StackPanel>
+            </Grid>
+            <views:EditorHost x:Name="HostView" Grid.Row="1"
+                              Visibility="{Binding Group.HasTabs, ElementName=Root, Converter={StaticResource BoolToVisibility}}" />
+            <TextBlock Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.6" TextAlignment="Center" TextWrapping="Wrap"
+                       Text="Select a page in the tree, or press Ctrl+N for a new page"
+                       Visibility="{Binding Group.HasTabs, ElementName=Root, Converter={StaticResource InverseBoolToVisibility}}" />
+        </Grid>
+    </Border>
+</UserControl>

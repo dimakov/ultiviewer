@@ -10,4 +10,13 @@
     <conv:HexToBrushConverter x:Key="HexToBrush" />
     <conv:SelectedValueBrushConverter x:Key="SelectedValueBrush" />
     <FontFamily x:Key="IconFont">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
+    <Style x:Key="ViewModeButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="10,3" />
+        <Setter Property="Margin" Value="1,0" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Focusable" Value="False" />
+    </Style>
 </ResourceDictionary>

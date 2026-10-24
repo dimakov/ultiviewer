@@ -24,14 +24,14 @@ public sealed partial class MainViewModel
     partial void OnDocumentEdited(DocumentTabViewModel tab) => DocumentEdited?.Invoke(tab);
 
     /// <summary>The active tab's view mode, or null when it isn't Markdown (the toggle is hidden).</summary>
-    public ViewMode? ActiveViewMode => ActiveTab is { IsMarkdown: true } tab ? tab.ViewMode : null;
+    public ViewMode? ActiveViewMode => FocusedGroup?.ActiveViewMode;
 
     [RelayCommand]
     private void CycleViewMode()
     {
         if (ActiveTab is { IsMarkdown: true } tab)
         {
-            SetTabViewMode(tab, tab.ViewMode switch
+            SetTabViewMode(tab, FocusedGroup.ModeOf(tab) switch
             {
                 ViewMode.Live => ViewMode.Edit,
                 ViewMode.Edit => ViewMode.Split,
@@ -50,10 +50,19 @@ public sealed partial class MainViewModel
         }
     }
 
-    /// <summary>Changes a tab's view mode; the choice also becomes the default for newly opened pages.</summary>
+    /// <summary>
+    /// Changes a tab's view mode in the group showing it (the second editor can show a document differently);
+    /// the choice also becomes the default for newly opened pages.
+    /// </summary>
     public void SetTabViewMode(DocumentTabViewModel tab, ViewMode mode)
     {
-        tab.ViewMode = mode;
+        var group = GroupOf(tab) ?? FocusedGroup;
+        group.SetMode(tab, mode);
+        if (group == Secondary && !Primary.Tabs.Contains(tab))
+        {
+            tab.ViewMode = mode; // only shown here: the document's own mode follows (session, Unsplit)
+        }
+
         Settings.DefaultMarkdownViewMode = mode;
         OnPropertyChanged(nameof(ActiveViewMode));
         if (mode != ViewMode.Preview)
@@ -164,7 +173,7 @@ public sealed partial class MainViewModel
         int? line = null;
         if (suffix.StartsWith('#') && NotebookScanner.IsPageFile(full))
         {
-            var text = Tabs.FirstOrDefault(t => t.IsAt(full))?.Document.Text ?? TextDocumentFile.Load(full).Text;
+            var text = OpenTabs.FirstOrDefault(t => t.IsAt(full))?.Document.Text ?? TextDocumentFile.Load(full).Text;
             line = MarkdownHeadings.FindLine(text, suffix[1..]);
         }
 

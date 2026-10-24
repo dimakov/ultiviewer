@@ -70,7 +70,7 @@ public partial class MainViewModel
         var now = DateTime.Now;
         try
         {
-            if (Tabs.FirstOrDefault(t => t.IsAt(path)) is { } tab)
+            if (OpenTabs.FirstOrDefault(t => t.IsAt(path)) is { } tab)
             {
                 var document = tab.Document;
                 var updated = QuickCapture.Append(document.Text, note, now, Settings.TimeFormat, tab.Format.NewLine);

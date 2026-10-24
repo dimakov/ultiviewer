@@ -16,6 +16,7 @@ Notes are ordinary `.md` files in ordinary folders, so Explorer, git, OneDrive a
 - **Basic Text formatting** (like OneNote's Home tab): toolbar, Format menu and shortcuts for headings, bold/italic/underline/strikethrough, sub/superscript, highlight, font color, lists, quotes, links, tables and code, all written as Markdown.
 - **Spreadsheet-like tables**: Tab / Shift+Tab / Enter move between cells and keep columns aligned; insert, delete, move, align and sort rows and columns; paste cells from Excel as a table.
 - **Daily notes and quick notes**: Ctrl+Shift+D opens today's note (from a `Daily` template); Win+Alt+N from any app opens a small window that adds a time-stamped note to today's note or the Inbox; optional tray icon.
+- **Two editors** (Ctrl+\\): side by side or stacked, each with its own tabs and scrolling; the same note can be open in both, for example Live on one side and source on the other.
 - **Notepad++ tools**: find/replace bar with regex, go to line, duplicate/move/delete/join/sort lines, case conversion, bookmarks, column selection, smart highlighting.
 - **OneNote conveniences**: paste screenshots, drop files as attachments, Ctrl+1 to-dos and a To-do pane across notebooks, Tags pane, templates, favorites and recent pages, list continuation, `[[` completion, links that follow renames and moves.
 

@@ -17,6 +17,16 @@ public partial class MainWindow : Window
         InitializeComponent();
         _vm = vm;
         DataContext = vm;
+        PrimaryPane.Group = vm.Primary;
+        SecondaryPane.Group = vm.Secondary;
+        ArrangePanes();
+        vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(MainViewModel.IsSplit) or nameof(MainViewModel.SplitVertical))
+            {
+                ArrangePanes();
+            }
+        };
         RestorePlacement();
         Tree.OpenRequested += node => _vm.OpenDocument(node.Path, preview: false, focus: true);
         Activated += (_, _) => _vm.CheckAllDiskStates();
@@ -35,6 +45,68 @@ public partial class MainWindow : Window
         _vm.SettingsRequested += ShowSettings;
         _vm.HistoryRequested += ShowHistory;
         _vm.QuickCaptureRequested += ShowQuickCapture;
+    }
+
+    /// <summary>The editor of the focused pane.</summary>
+    internal Views.EditorHost ActiveEditorHost => _vm.FocusedGroup == _vm.Secondary ? SecondaryPane.Host : PrimaryPane.Host;
+
+    /// <summary>Lays out one editor, or two side by side / stacked with a splitter between them.</summary>
+    private void ArrangePanes()
+    {
+        EditorArea.RowDefinitions.Clear();
+        EditorArea.ColumnDefinitions.Clear();
+        if (!_vm.IsSplit)
+        {
+            SecondaryPane.Visibility = Visibility.Collapsed;
+            PaneSplitter.Visibility = Visibility.Collapsed;
+            Grid.SetRow(PrimaryPane, 0);
+            Grid.SetColumn(PrimaryPane, 0);
+            return;
+        }
+
+        var ratio = Math.Clamp(_vm.Session.SplitRatio, 0.15, 0.85);
+        SecondaryPane.Visibility = Visibility.Visible;
+        PaneSplitter.Visibility = Visibility.Visible;
+        if (_vm.SplitVertical)
+        {
+            EditorArea.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(ratio, GridUnitType.Star), MinWidth = 200 });
+            EditorArea.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            EditorArea.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1 - ratio, GridUnitType.Star), MinWidth = 200 });
+            PaneSplitter.Width = 5;
+            PaneSplitter.Height = double.NaN;
+            PaneSplitter.HorizontalAlignment = HorizontalAlignment.Stretch;
+            PaneSplitter.VerticalAlignment = VerticalAlignment.Stretch;
+            PaneSplitter.ResizeDirection = GridResizeDirection.Columns;
+        }
+        else
+        {
+            EditorArea.RowDefinitions.Add(new RowDefinition { Height = new GridLength(ratio, GridUnitType.Star), MinHeight = 100 });
+            EditorArea.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            EditorArea.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1 - ratio, GridUnitType.Star), MinHeight = 100 });
+            PaneSplitter.Width = double.NaN;
+            PaneSplitter.Height = 5;
+            PaneSplitter.HorizontalAlignment = HorizontalAlignment.Stretch;
+            PaneSplitter.VerticalAlignment = VerticalAlignment.Stretch;
+            PaneSplitter.ResizeDirection = GridResizeDirection.Rows;
+        }
+
+        var (row, column) = _vm.SplitVertical ? (0, 1) : (1, 0);
+        Grid.SetRow(PrimaryPane, 0);
+        Grid.SetColumn(PrimaryPane, 0);
+        Grid.SetRow(PaneSplitter, row);
+        Grid.SetColumn(PaneSplitter, column);
+        Grid.SetRow(SecondaryPane, row * 2);
+        Grid.SetColumn(SecondaryPane, column * 2);
+    }
+
+    private void OnPaneSplitterDragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
+    {
+        var first = _vm.SplitVertical ? PrimaryPane.ActualWidth : PrimaryPane.ActualHeight;
+        var second = _vm.SplitVertical ? SecondaryPane.ActualWidth : SecondaryPane.ActualHeight;
+        if (first + second > 0)
+        {
+            _vm.Session.SplitRatio = first / (first + second);
+        }
     }
 
     /// <summary>Shows the window again (from the tray, a second launch or the quick-note window) and brings it forward.</summary>
@@ -156,7 +228,19 @@ public partial class MainWindow : Window
         };
         if (_vm.HasTabs)
         {
-            panes.Add((() => EditorView.IsKeyboardFocusWithin || Tabs.IsKeyboardFocusWithin, _vm.FocusEditor));
+            panes.Add((() => PrimaryPane.IsKeyboardFocusWithin, () =>
+            {
+                _vm.FocusedGroup = _vm.Primary;
+                _vm.FocusEditor();
+            }));
+            if (_vm.IsSplit)
+            {
+                panes.Add((() => SecondaryPane.IsKeyboardFocusWithin, () =>
+                {
+                    _vm.FocusedGroup = _vm.Secondary;
+                    _vm.FocusEditor();
+                }));
+            }
         }
 
         if (_vm.IsSearchPanelOpen)
@@ -170,7 +254,7 @@ public partial class MainWindow : Window
     }
 
     private void OnFindInNotebooks(object sender, RoutedEventArgs e) =>
-        _vm.OpenSearchCommand.Execute(_vm.HasTabs ? EditorView.TextEditor.SelectedText : null);
+        _vm.OpenSearchCommand.Execute(_vm.HasTabs ? ActiveEditorHost.TextEditor.SelectedText : null);
 
     protected override void OnClosing(CancelEventArgs e)
     {

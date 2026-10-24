@@ -29,8 +29,6 @@ public sealed partial class MainViewModel
     private bool _syncingSelection;
     private bool _checkingDisk;
 
-    public ObservableCollection<DocumentTabViewModel> Tabs { get; } = [];
-
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(WindowTitle))]
     private DocumentTabViewModel? _activeTab;
@@ -47,7 +45,7 @@ public sealed partial class MainViewModel
     [ObservableProperty]
     private int _wordCount;
 
-    public bool HasTabs => Tabs.Count > 0;
+    public bool HasTabs => Primary.Tabs.Count > 0 || Secondary.Tabs.Count > 0;
 
     public string WindowTitle => ActiveTab is { } tab
         ? $"{tab.Title}{(tab.IsDirty ? " •" : "")} — {Core.AppInfo.Name}"
@@ -79,7 +77,6 @@ public sealed partial class MainViewModel
 
     private void InitializeDocuments(IEnumerable<string> startupFiles)
     {
-        Tabs.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasTabs));
         RestoreTabs();
         foreach (var file in startupFiles)
         {
@@ -111,10 +108,11 @@ public sealed partial class MainViewModel
 
     partial void OnActiveTabChanged(DocumentTabViewModel? oldValue, DocumentTabViewModel? newValue)
     {
+        FollowActiveTab(newValue);
         if (oldValue is not null)
         {
             oldValue.PropertyChanged -= OnActiveTabPropertyChanged;
-            if (Tabs.Contains(oldValue) && oldValue.IsDirty && AutosaveEligible(oldValue))
+            if (IsOpen(oldValue) && oldValue.IsDirty && AutosaveEligible(oldValue))
             {
                 SaveTab(oldValue, interactive: false);
             }
@@ -163,7 +161,9 @@ public sealed partial class MainViewModel
     public DocumentTabViewModel? OpenDocument(string path, bool preview = false, int? line = null, bool focus = true)
     {
         path = Path.GetFullPath(path);
-        if (Tabs.FirstOrDefault(t => t.IsAt(path)) is { } existing)
+
+        // Already open: in the focused editor, or else in the other one (use "Open in other editor" for a second view).
+        if ((FocusedGroup.Tabs.FirstOrDefault(t => t.IsAt(path)) ?? OtherGroup(FocusedGroup).Tabs.FirstOrDefault(t => t.IsAt(path))) is { } existing)
         {
             if (!preview)
             {
@@ -243,18 +243,26 @@ public sealed partial class MainViewModel
     private void UpdateNotebookPageFlag(DocumentTabViewModel tab) =>
         tab.IsNotebookPage = tab.Path is not null && NotebookScanner.IsPageFile(tab.Path) && NotebookOf(tab.Path) is not null;
 
+    /// <summary>Adds a new document to the focused editor, replacing its preview tab when asked.</summary>
     private void AddTab(DocumentTabViewModel tab, bool replacePreview)
     {
-        var index = ActiveTab is null ? Tabs.Count : Tabs.IndexOf(ActiveTab) + 1;
-        if (replacePreview && Tabs.FirstOrDefault(t => t.IsPreviewTab && !t.IsDirty && t != tab) is { } old)
+        var group = FocusedGroup;
+        var tabs = group.Tabs;
+        var index = group.ActiveTab is null ? tabs.Count : tabs.IndexOf(group.ActiveTab) + 1;
+        if (replacePreview && tabs.FirstOrDefault(t => t.IsPreviewTab && !t.IsDirty && t != tab) is { } old)
         {
-            index = Tabs.IndexOf(old);
-            Detach(old);
-            Tabs.RemoveAt(index);
+            index = tabs.IndexOf(old);
+            tabs.RemoveAt(index);
+            group.Forget(old);
+            if (!IsOpen(old))
+            {
+                Detach(old);
+            }
         }
 
         Attach(tab);
-        Tabs.Insert(Math.Clamp(index, 0, Tabs.Count), tab);
+        group.Adopt(tab);
+        tabs.Insert(Math.Clamp(index, 0, tabs.Count), tab);
     }
 
     private void Activate(DocumentTabViewModel tab, int? line, bool focus)
@@ -313,7 +321,7 @@ public sealed partial class MainViewModel
                 timer.Tick += (_, _) =>
                 {
                     timer.Stop();
-                    if (tab.IsDirty && Tabs.Contains(tab))
+                    if (tab.IsDirty && IsOpen(tab))
                     {
                         SaveTab(tab, interactive: false);
                     }
@@ -450,7 +458,7 @@ public sealed partial class MainViewModel
     [RelayCommand]
     private void SaveAll()
     {
-        foreach (var tab in Tabs.Where(t => t.IsDirty).ToList())
+        foreach (var tab in OpenTabs.Where(t => t.IsDirty).ToList())
         {
             SaveTab(tab, interactive: true);
         }
@@ -461,7 +469,7 @@ public sealed partial class MainViewModel
     [RelayCommand]
     private void NewFile()
     {
-        var used = Tabs.Where(t => t.IsUntitled).Select(t => t.UntitledName).ToHashSet();
+        var used = OpenTabs.Where(t => t.IsUntitled).Select(t => t.UntitledName).ToHashSet();
         var n = 1;
         while (used.Contains($"new {n}"))
         {
@@ -498,11 +506,29 @@ public sealed partial class MainViewModel
     }
 
     /// <summary>Closes a tab, asking to save unsaved text that isn't autosaved. False if the user cancelled.</summary>
-    public bool CloseTab(DocumentTabViewModel tab)
+    public bool CloseTab(DocumentTabViewModel tab) => CloseTab(tab, GroupOf(tab));
+
+    /// <summary>
+    /// Closes a tab in one group. While the other group still shows the document it just leaves this group;
+    /// otherwise the document closes (saving or asking first). False if the user cancelled.
+    /// </summary>
+    public bool CloseTab(DocumentTabViewModel tab, EditorGroup? group)
     {
+        group ??= GroupOf(tab);
+        if (group is null)
+        {
+            return true;
+        }
+
         if (tab == ActiveTab)
         {
             CaptureEditorState?.Invoke();
+        }
+
+        if (OtherGroup(group).Tabs.Contains(tab))
+        {
+            RemoveFromGroup(group, tab);
+            return true;
         }
 
         if (tab.IsDirty)
@@ -531,14 +557,7 @@ public sealed partial class MainViewModel
             _closedTabs.Push(tab.Path);
         }
 
-        var index = Tabs.IndexOf(tab);
-        var wasActive = tab == ActiveTab;
-        Tabs.Remove(tab);
-        if (wasActive || ActiveTab is null)
-        {
-            ActiveTab = Tabs.Count == 0 ? null : Tabs[Math.Min(index, Tabs.Count - 1)];
-        }
-
+        RemoveFromGroup(group, tab);
         return true;
     }
 
@@ -546,23 +565,28 @@ public sealed partial class MainViewModel
     private void CloseOthers(DocumentTabViewModel? tab)
     {
         var keep = tab ?? ActiveTab;
-        foreach (var other in Tabs.Where(t => t != keep && !t.IsPinned).ToList())
+        var group = keep is null ? FocusedGroup : GroupOf(keep) ?? FocusedGroup;
+        foreach (var other in group.Tabs.Where(t => t != keep && !t.IsPinned).ToList())
         {
-            if (!CloseTab(other))
+            if (!CloseTab(other, group))
             {
                 break;
             }
         }
     }
 
+    /// <summary>Closes every unpinned tab in both editors.</summary>
     [RelayCommand]
     private void CloseAll()
     {
-        foreach (var tab in Tabs.Where(t => !t.IsPinned).ToList())
+        foreach (var group in new[] { Secondary, Primary })
         {
-            if (!CloseTab(tab))
+            foreach (var tab in group.Tabs.Where(t => !t.IsPinned).ToList())
             {
-                break;
+                if (!CloseTab(tab, group))
+                {
+                    return;
+                }
             }
         }
     }
@@ -570,14 +594,14 @@ public sealed partial class MainViewModel
     [RelayCommand]
     private void CloseToRight(DocumentTabViewModel? tab)
     {
-        if ((tab ?? ActiveTab) is not { } anchor)
+        if ((tab ?? ActiveTab) is not { } anchor || GroupOf(anchor) is not { } group)
         {
             return;
         }
 
-        foreach (var other in Tabs.Skip(Tabs.IndexOf(anchor) + 1).Where(t => !t.IsPinned).ToList())
+        foreach (var other in group.Tabs.Skip(group.Tabs.IndexOf(anchor) + 1).Where(t => !t.IsPinned).ToList())
         {
-            if (!CloseTab(other))
+            if (!CloseTab(other, group))
             {
                 break;
             }
@@ -605,9 +629,10 @@ public sealed partial class MainViewModel
 
     private void CycleTab(int step)
     {
-        if (Tabs.Count > 1 && ActiveTab is { } tab)
+        var tabs = FocusedGroup.Tabs;
+        if (tabs.Count > 1 && ActiveTab is { } tab)
         {
-            ActiveTab = Tabs[(Tabs.IndexOf(tab) + step + Tabs.Count) % Tabs.Count];
+            ActiveTab = tabs[(tabs.IndexOf(tab) + step + tabs.Count) % tabs.Count];
             EditorFocusRequested?.Invoke();
         }
     }
@@ -622,12 +647,15 @@ public sealed partial class MainViewModel
 
         target.IsPinned = !target.IsPinned;
         target.IsPreviewTab = false;
-        var pinnedCount = Tabs.Count(t => t.IsPinned && t != target);
-        var from = Tabs.IndexOf(target);
-        var to = target.IsPinned ? pinnedCount : Math.Max(pinnedCount, 0);
-        if (from != to)
+        foreach (var group in new[] { Primary, Secondary }.Where(g => g.Tabs.Contains(target)))
         {
-            Tabs.Move(from, Math.Min(to, Tabs.Count - 1));
+            var tabs = group.Tabs;
+            var pinnedCount = tabs.Count(t => t.IsPinned && t != target);
+            var from = tabs.IndexOf(target);
+            if (from != pinnedCount)
+            {
+                tabs.Move(from, Math.Min(pinnedCount, tabs.Count - 1));
+            }
         }
     }
 
@@ -687,12 +715,21 @@ public sealed partial class MainViewModel
         }
     }
 
-    public void MoveTab(DocumentTabViewModel tab, int newIndex)
+    /// <summary>Reorders a tab within its group, or moves it there from the other group (drag and drop).</summary>
+    public void MoveTab(EditorGroup group, DocumentTabViewModel tab, int newIndex)
     {
-        var from = Tabs.IndexOf(tab);
-        if (from >= 0 && newIndex >= 0 && newIndex < Tabs.Count && from != newIndex)
+        if (!group.Tabs.Contains(tab) && OtherGroup(group).Tabs.Contains(tab))
         {
-            Tabs.Move(from, newIndex);
+            group.Adopt(tab);
+            group.Tabs.Insert(Math.Clamp(newIndex, 0, group.Tabs.Count), tab);
+            RemoveFromGroup(OtherGroup(group), tab);
+            return;
+        }
+
+        var from = group.Tabs.IndexOf(tab);
+        if (from >= 0 && newIndex >= 0 && newIndex < group.Tabs.Count && from != newIndex)
+        {
+            group.Tabs.Move(from, newIndex);
         }
     }
 
@@ -745,7 +782,7 @@ public sealed partial class MainViewModel
 
     partial void OnFileChangedOnDisk(string path)
     {
-        foreach (var tab in Tabs.Where(t => t.IsAt(path)).ToList())
+        foreach (var tab in OpenTabs.Where(t => t.IsAt(path)).ToList())
         {
             CheckDiskState(tab);
         }
@@ -759,7 +796,7 @@ public sealed partial class MainViewModel
     /// <summary>Re-checks every open file; called when the window is activated (like Notepad++).</summary>
     public void CheckAllDiskStates()
     {
-        foreach (var tab in Tabs.ToList())
+        foreach (var tab in OpenTabs)
         {
             CheckDiskState(tab);
         }
@@ -883,7 +920,7 @@ public sealed partial class MainViewModel
     partial void OnItemMoved(string oldPath, string newPath)
     {
         _history?.Move(oldPath, newPath);
-        foreach (var tab in Tabs)
+        foreach (var tab in OpenTabs)
         {
             if (tab.Path is not { } path)
             {
@@ -912,7 +949,7 @@ public sealed partial class MainViewModel
 
     partial void OnItemDeleted(string path)
     {
-        foreach (var tab in Tabs.Where(t => t.IsAt(path)).ToList())
+        foreach (var tab in OpenTabs.Where(t => t.IsAt(path)).ToList())
         {
             if (tab.IsDirty)
             {
@@ -922,13 +959,8 @@ public sealed partial class MainViewModel
             {
                 DropBackup(tab);
                 Detach(tab);
-                var index = Tabs.IndexOf(tab);
-                var wasActive = tab == ActiveTab;
-                Tabs.Remove(tab);
-                if (wasActive)
-                {
-                    ActiveTab = Tabs.Count == 0 ? null : Tabs[Math.Min(index, Tabs.Count - 1)];
-                }
+                RemoveFromGroup(Secondary, tab);
+                RemoveFromGroup(Primary, tab);
             }
         }
     }
@@ -939,7 +971,7 @@ public sealed partial class MainViewModel
 
     private void WriteBackups(bool force = false)
     {
-        foreach (var tab in Tabs)
+        foreach (var tab in OpenTabs)
         {
             var autosaved = AutosaveEligible(tab) && !tab.IsDeletedOnDisk;
             if (!tab.IsDirty || (autosaved && !force) || tab.Version == tab.BackupVersion)
@@ -977,84 +1009,129 @@ public sealed partial class MainViewModel
     private void CaptureDocumentState()
     {
         CaptureEditorState?.Invoke();
-        foreach (var tab in Tabs.Where(t => t.IsDirty && AutosaveEligible(t) && !t.IsDeletedOnDisk).ToList())
+        foreach (var tab in OpenTabs.Where(t => t.IsDirty && AutosaveEligible(t) && !t.IsDeletedOnDisk).ToList())
         {
             SaveTab(tab, interactive: false);
         }
 
         WriteBackups(force: true);
-        Session.Tabs = Tabs.Select(t => new OpenTabState
+        OpenTabState State(DocumentTabViewModel t, EditorGroup group) => new()
         {
             Path = t.Path ?? "",
             UntitledName = t.IsUntitled ? t.UntitledName : null,
             Language = t.IsUntitled ? t.Language : null,
             CaretOffset = t.CaretOffset,
             VerticalOffset = t.VerticalOffset,
-            ViewMode = t.ViewMode,
+            ViewMode = group.ModeOf(t),
             Pinned = t.IsPinned,
             BackupFile = t.IsDirty ? t.BackupName : null,
             Bookmarks = t.BookmarkLines().ToList(),
-        }).ToList();
-        Session.ActiveTab = ActiveTab is null ? -1 : Tabs.IndexOf(ActiveTab);
-        _backups.DeleteAllExcept(Session.Tabs.Select(t => t.BackupFile).OfType<string>());
+        };
+
+        Session.Tabs = Primary.Tabs.Select(t => State(t, Primary)).ToList();
+        Session.ActiveTab = Primary.ActiveTab is null ? -1 : Primary.Tabs.IndexOf(Primary.ActiveTab);
+        Session.IsSplit = IsSplit;
+        Session.SplitVertical = SplitVertical;
+        Session.SplitTabs = IsSplit ? Secondary.Tabs.Select(t => State(t, Secondary)).ToList() : [];
+        Session.SplitActiveTab = Secondary.ActiveTab is null ? -1 : Secondary.Tabs.IndexOf(Secondary.ActiveTab);
+        Session.FocusedGroup = FocusedGroup.Index;
+        _backups.DeleteAllExcept(Session.Tabs.Concat(Session.SplitTabs).Select(t => t.BackupFile).OfType<string>());
     }
 
     private void RestoreTabs()
     {
         foreach (var state in Session.Tabs)
         {
-            var backup = state.BackupFile is { } name ? _backups.Read(name) : null;
-            DocumentTabViewModel? tab = null;
-            try
+            if (RestoreTab(state) is { } tab)
             {
-                if (string.IsNullOrEmpty(state.Path))
-                {
-                    if (backup is not null)
-                    {
-                        tab = new DocumentTabViewModel(null, "", NewFileFormat(), state.UntitledName ?? "new 1");
-                        if (state.Language is { } language)
-                        {
-                            tab.Language = language;
-                        }
-                    }
-                }
-                else if (File.Exists(state.Path) && TextDocumentFile.Inspect(state.Path) == LoadProblem.None)
-                {
-                    tab = CreateTab(state.Path, TextDocumentFile.Load(state.Path, Settings.DefaultLineEnding));
-                }
-                else if (backup is not null)
-                {
-                    tab = new DocumentTabViewModel(state.Path, "", NewFileFormat()) { IsDeletedOnDisk = true };
-                    UpdateNotebookPageFlag(tab);
-                }
+                Attach(tab);
+                Primary.Tabs.Add(tab);
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                ErrorLog.Write(ex, $"Restoring tab {state.Path}");
-            }
-
-            if (tab is null)
-            {
-                continue;
-            }
-
-            if (backup is not null)
-            {
-                tab.Document.Text = backup; // an undoable edit, so the tab shows as unsaved
-                tab.BackupName = state.BackupFile;
-                tab.BackupVersion = tab.Version;
-            }
-
-            tab.CaretOffset = Math.Min(state.CaretOffset, tab.Document.TextLength);
-            tab.SelectionStart = tab.CaretOffset;
-            tab.VerticalOffset = state.VerticalOffset;
-            tab.ViewMode = state.ViewMode ?? tab.ViewMode;
-            tab.IsPinned = state.Pinned;
-            tab.SetBookmarks(state.Bookmarks);
-            Attach(tab);
-            Tabs.Add(tab);
         }
 
-        ActiveTab = Session.ActiveTab >= 0 && Session.ActiveTab < Tabs.Count ? Tabs[Session.ActiveTab] : Tabs.LastOrDefault();
+        Primary.ActiveTab = Session.ActiveTab >= 0 && Session.ActiveTab < Primary.Tabs.Count ? Primary.Tabs[Session.ActiveTab] : Primary.Tabs.LastOrDefault();
+        if (Session.IsSplit)
+        {
+            foreach (var state in Session.SplitTabs)
+            {
+                // A document open on both sides is one tab object shown twice.
+                var shared = Primary.Tabs.FirstOrDefault(t => state.Path.Length > 0 ? t.IsAt(state.Path) : t.IsUntitled && t.UntitledName == state.UntitledName);
+                var tab = shared ?? RestoreTab(state);
+                if (tab is null || Secondary.Tabs.Contains(tab))
+                {
+                    continue;
+                }
+
+                if (shared is null)
+                {
+                    Attach(tab);
+                }
+
+                Secondary.Adopt(tab);
+                Secondary.Tabs.Add(tab);
+                Secondary.SetMode(tab, state.ViewMode ?? tab.ViewMode);
+            }
+
+            Secondary.ActiveTab = Session.SplitActiveTab >= 0 && Session.SplitActiveTab < Secondary.Tabs.Count ? Secondary.Tabs[Session.SplitActiveTab] : Secondary.Tabs.LastOrDefault();
+            IsSplit = Secondary.Tabs.Count > 0;
+            SplitVertical = Session.SplitVertical;
+        }
+
+        FocusedGroup = IsSplit && Session.FocusedGroup == 1 ? Secondary : Primary;
+        ActiveTab = FocusedGroup.ActiveTab;
+    }
+
+    /// <summary>Recreates one tab from the session (with its unsaved text from the backup), or null.</summary>
+    private DocumentTabViewModel? RestoreTab(OpenTabState state)
+    {
+        var backup = state.BackupFile is { } name ? _backups.Read(name) : null;
+        DocumentTabViewModel? tab = null;
+        try
+        {
+            if (string.IsNullOrEmpty(state.Path))
+            {
+                if (backup is not null)
+                {
+                    tab = new DocumentTabViewModel(null, "", NewFileFormat(), state.UntitledName ?? "new 1");
+                    if (state.Language is { } language)
+                    {
+                        tab.Language = language;
+                    }
+                }
+            }
+            else if (File.Exists(state.Path) && TextDocumentFile.Inspect(state.Path) == LoadProblem.None)
+            {
+                tab = CreateTab(state.Path, TextDocumentFile.Load(state.Path, Settings.DefaultLineEnding));
+            }
+            else if (backup is not null)
+            {
+                tab = new DocumentTabViewModel(state.Path, "", NewFileFormat()) { IsDeletedOnDisk = true };
+                UpdateNotebookPageFlag(tab);
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            ErrorLog.Write(ex, $"Restoring tab {state.Path}");
+        }
+
+        if (tab is null)
+        {
+            return null;
+        }
+
+        if (backup is not null)
+        {
+            tab.Document.Text = backup; // an undoable edit, so the tab shows as unsaved
+            tab.BackupName = state.BackupFile;
+            tab.BackupVersion = tab.Version;
+        }
+
+        tab.CaretOffset = Math.Min(state.CaretOffset, tab.Document.TextLength);
+        tab.SelectionStart = tab.CaretOffset;
+        tab.VerticalOffset = state.VerticalOffset;
+        tab.ViewMode = state.ViewMode ?? tab.ViewMode;
+        tab.IsPinned = state.Pinned;
+        tab.SetBookmarks(state.Bookmarks);
+        return tab;
     }
 }

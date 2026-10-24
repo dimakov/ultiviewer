@@ -187,7 +187,7 @@ public sealed partial class MainViewModel
             return;
         }
 
-        var buffers = Tabs.Where(t => t.Path is not null && t.IsDirty).ToDictionary(t => t.Path!, t => t.Document.Text, StringComparer.OrdinalIgnoreCase);
+        var buffers = OpenTabs.Where(t => t.Path is not null && t.IsDirty).ToDictionary(t => t.Path!, t => t.Document.Text, StringComparer.OrdinalIgnoreCase);
         var scope = new SearchScope(ScopePath());
         var stopwatch = Stopwatch.StartNew();
         var pages = 0;
@@ -322,7 +322,7 @@ public sealed partial class MainViewModel
         {
             try
             {
-                var text = Tabs.FirstOrDefault(t => t.IsAt(page.Path))?.Document.Text ?? Core.Files.TextDocumentFile.Load(page.Path).Text;
+                var text = OpenTabs.FirstOrDefault(t => t.IsAt(page.Path))?.Document.Text ?? Core.Files.TextDocumentFile.Load(page.Path).Text;
                 var count = Core.Text.TextSearcher.FindAll(text, regex).Count;
                 if (count > 0)
                 {
@@ -398,7 +398,7 @@ public sealed partial class MainViewModel
     public IReadOnlyList<QuickOpenItem> QuickOpenItems(string query)
     {
         var pages = AllPagePaths()
-            .Concat(Tabs.Where(t => t.Path is not null).Select(t => t.Path!))
+            .Concat(OpenTabs.Where(t => t.Path is not null).Select(t => t.Path!))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
 
