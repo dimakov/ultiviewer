@@ -19,6 +19,7 @@ Notes are ordinary `.md` files in ordinary folders, so Explorer, git, OneDrive a
 - **Two editors** (Ctrl+\\): side by side or stacked, each with its own tabs and scrolling; the same note can be open in both, for example Live on one side and source on the other.
 - **Outline and folding**: an Outline pane of headings; fold sections, code, lists and front matter (remembered per page); Ctrl+Shift+↑/↓ moves a whole section or list item with its children; Tab indents list items with their children.
 - **Task dates and reminders** (Obsidian Tasks syntax): due/scheduled dates, priorities, `🔁 every week` recurrence and `⏰` reminders; the To-do pane groups Overdue / Today / Upcoming; completing a recurring task creates the next one; reminder cards with Open / Done / Snooze.
+- **Export and print**: a page or a whole section as one self-contained HTML file or a PDF (A4/Letter, margins), or printed; math, diagrams, images and page breaks (`<!-- pagebreak -->`) included.
 - **Notepad++ tools**: find/replace bar with regex, go to line, duplicate/move/delete/join/sort lines, case conversion, bookmarks, column selection, smart highlighting.
 - **OneNote conveniences**: paste screenshots, drop files as attachments, Ctrl+1 to-dos and a To-do pane across notebooks, Tags pane, templates, favorites and recent pages, list continuation, `[[` completion, links that follow renames and moves.
 

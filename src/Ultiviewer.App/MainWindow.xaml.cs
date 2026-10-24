@@ -45,6 +45,7 @@ public partial class MainWindow : Window
         _vm.SettingsRequested += ShowSettings;
         _vm.HistoryRequested += ShowHistory;
         _vm.QuickCaptureRequested += ShowQuickCapture;
+        _vm.ExportRequested += request => new Views.ExportWindow(request) { Owner = this }.Show();
     }
 
     /// <summary>The editor of the focused pane.</summary>

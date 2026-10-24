@@ -25,6 +25,8 @@
                 <MenuItem Header="Open folder as note_book…" Command="{Binding OpenNotebookFolderCommand}" />
                 <MenuItem Header="_Import notebook from zip…" Command="{Binding ImportZipCommand}" />
                 <MenuItem Header="_Export notebook as zip…" Command="{Binding ExportZipCommand}" />
+                <MenuItem Header="Export page as _HTML or PDF…" Command="{Binding ExportDocumentCommand}" InputGestureText="Ctrl+Shift+E" />
+                <MenuItem Header="_Print…" Command="{Binding PrintCommand}" InputGestureText="Ctrl+P" />
                 <Separator />
                 <MenuItem Header="To_day's note" Command="{Binding OpenTodayCommand}" InputGestureText="Ctrl+Shift+D" />
                 <MenuItem Header="_Quick note…" Command="{Binding ShowQuickNoteCommand}" />

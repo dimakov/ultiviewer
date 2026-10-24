@@ -46,6 +46,32 @@ public sealed class PreviewPane
 
     public event Action<int>? LineDoubleClicked;
 
+    /// <summary>Raised when a render has finished drawing (code colors, math and diagrams included).</summary>
+    public event Action? Rendered;
+
+    /// <summary>The rendered content's HTML (after math and diagrams were drawn), for export.</summary>
+    public async Task<string> GetContentHtmlAsync()
+    {
+        var json = await _web.CoreWebView2.ExecuteScriptAsync("document.getElementById('content').innerHTML");
+        return JsonSerializer.Deserialize<string>(json) ?? "";
+    }
+
+    /// <summary>Prints the page to a PDF file: paper size and margins in inches.</summary>
+    public async Task<bool> PrintToPdfAsync(string path, double pageWidth, double pageHeight, double margin, bool landscape)
+    {
+        var settings = _web.CoreWebView2.Environment.CreatePrintSettings();
+        settings.Orientation = landscape ? CoreWebView2PrintOrientation.Landscape : CoreWebView2PrintOrientation.Portrait;
+        settings.PageWidth = pageWidth;
+        settings.PageHeight = pageHeight;
+        settings.MarginTop = settings.MarginBottom = settings.MarginLeft = settings.MarginRight = margin;
+        settings.ShouldPrintBackgrounds = true;
+        settings.ShouldPrintHeaderAndFooter = false;
+        return await _web.CoreWebView2.PrintToPdfAsync(path, settings);
+    }
+
+    /// <summary>Opens the browser print dialog (printer, pages, preview).</summary>
+    public void ShowPrintDialog() => _web.CoreWebView2.ShowPrintUI(CoreWebView2PrintDialogKind.Browser);
+
     /// <summary>Starts WebView2 once. Throws when the WebView2 runtime is missing.</summary>
     public Task EnsureInitializedAsync() => _initialization ??= InitializeAsync();
 
@@ -226,6 +252,9 @@ public sealed class PreviewPane
                     break;
                 case "link":
                     LinkClicked?.Invoke(message.GetProperty("href").GetString() ?? "");
+                    break;
+                case "rendered":
+                    Rendered?.Invoke();
                     break;
                 case "toggleTask":
                     TaskToggled?.Invoke(message.GetProperty("line").GetInt32());

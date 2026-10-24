@@ -69,8 +69,10 @@
       img.addEventListener('load', collectBlocks, { once: true });
     }
 
+    // Tell the app when everything, diagrams included, is drawn (export and print wait for this).
     const diagrams = content.querySelectorAll('.mermaid');
-    if (diagrams.length) renderDiagrams(diagrams);
+    const drawn = diagrams.length ? renderDiagrams(diagrams) : Promise.resolve();
+    drawn.finally(() => post({ type: 'rendered' }));
   }
 
   function loadMermaid() {

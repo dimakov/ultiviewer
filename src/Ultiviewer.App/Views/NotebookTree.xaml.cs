@@ -191,6 +191,7 @@ public partial class NotebookTree : UserControl
                 menu.Items.Add(ColorMenu(node));
                 menu.Items.Add(Item("Refresh", vm.RefreshCommand));
                 menu.Items.Add(Item("Export as zip…", vm.ExportZipCommand, node));
+                menu.Items.Add(Item("Export as HTML or PDF…", vm.ExportDocumentCommand, node));
                 menu.Items.Add(new Separator());
                 menu.Items.Add(Item("Open in Explorer", vm.RevealInExplorerCommand, node));
                 menu.Items.Add(Item("Copy path", vm.CopyPathCommand, node));
@@ -207,6 +208,7 @@ public partial class NotebookTree : UserControl
                 menu.Items.Add(Item("Delete", vm.DeleteCommand, node, "Del"));
                 menu.Items.Add(ColorMenu(node));
                 menu.Items.Add(Item("Export as zip…", vm.ExportZipCommand, node));
+                menu.Items.Add(Item("Export as HTML or PDF…", vm.ExportDocumentCommand, node));
                 menu.Items.Add(new Separator());
                 menu.Items.Add(Item("Open in Explorer", vm.RevealInExplorerCommand, node));
                 menu.Items.Add(Item("Copy path", vm.CopyPathCommand, node));
@@ -222,6 +224,7 @@ public partial class NotebookTree : UserControl
                 menu.Items.Add(Item("Rename", vm.RenameCommand, node, "F2"));
                 menu.Items.Add(Item("Delete", vm.DeleteCommand, node, "Del"));
                 menu.Items.Add(Item("History…", new RelayAction(() => vm.ShowHistoryFor(node.Path))));
+                menu.Items.Add(Item("Export as HTML or PDF…", vm.ExportDocumentCommand, node));
                 AddPageExtras(menu, node);
                 menu.Items.Add(new Separator());
                 menu.Items.Add(Item("Open in Explorer", vm.RevealInExplorerCommand, node));
