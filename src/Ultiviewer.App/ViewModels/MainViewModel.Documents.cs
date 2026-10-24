@@ -1026,6 +1026,7 @@ public sealed partial class MainViewModel
             Pinned = t.IsPinned,
             BackupFile = t.IsDirty ? t.BackupName : null,
             Bookmarks = t.BookmarkLines().ToList(),
+            Folded = [.. t.FoldedLines],
         };
 
         Session.Tabs = Primary.Tabs.Select(t => State(t, Primary)).ToList();
@@ -1132,6 +1133,7 @@ public sealed partial class MainViewModel
         tab.ViewMode = state.ViewMode ?? tab.ViewMode;
         tab.IsPinned = state.Pinned;
         tab.SetBookmarks(state.Bookmarks);
+        tab.FoldedLines = state.Folded;
         return tab;
     }
 }

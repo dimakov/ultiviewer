@@ -247,6 +247,15 @@ public partial class EditorHost
     {
         var document = Editor.Document;
         var (first, last) = SelectedLines();
+
+        // In Markdown a heading moves with its section and a list item with its children.
+        if (_current is { IsMarkdown: true } && first == last
+            && MarkdownOutline.MoveBlock(document.Text, Editor.CaretOffset, up, NewLineAt(first.LineNumber)) is { } block)
+        {
+            Apply(block);
+            return;
+        }
+
         var neighbour = up ? first.PreviousLine : last.NextLine;
         if (neighbour is null)
         {

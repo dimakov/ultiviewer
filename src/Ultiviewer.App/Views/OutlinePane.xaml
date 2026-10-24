@@ -1,0 +1,29 @@
+<UserControl x:Class="Ultiviewer.App.Views.OutlinePane"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:Ultiviewer.App.ViewModels">
+    <Grid>
+        <TreeView x:Name="Tree" Margin="0,6,0,0" BorderThickness="0" Background="Transparent"
+                  ItemsSource="{Binding Outline}" AutomationProperties.Name="Headings of this page"
+                  PreviewMouseLeftButtonUp="OnItemClicked" KeyDown="OnTreeKeyDown">
+            <TreeView.ItemContainerStyle>
+                <Style TargetType="TreeViewItem" BasedOn="{StaticResource {x:Type TreeViewItem}}">
+                    <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                    <Setter Property="AutomationProperties.Name" Value="{Binding Text}" />
+                </Style>
+            </TreeView.ItemContainerStyle>
+            <TreeView.ItemTemplate>
+                <HierarchicalDataTemplate DataType="{x:Type vm:OutlineItem}" ItemsSource="{Binding Children}">
+                    <TextBlock x:Name="Label" Text="{Binding Text}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text}" />
+                    <HierarchicalDataTemplate.Triggers>
+                        <DataTrigger Binding="{Binding IsCurrent}" Value="True">
+                            <Setter TargetName="Label" Property="FontWeight" Value="SemiBold" />
+                            <Setter TargetName="Label" Property="Foreground" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" />
+                        </DataTrigger>
+                    </HierarchicalDataTemplate.Triggers>
+                </HierarchicalDataTemplate>
+            </TreeView.ItemTemplate>
+        </TreeView>
+        <TextBlock Margin="12" TextWrapping="Wrap" Opacity="0.6" Text="{Binding OutlineMessage}" />
+    </Grid>
+</UserControl>

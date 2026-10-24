@@ -61,6 +61,7 @@ public partial class EditorHost : UserControl
         InitializeFormatting();
         InitializeLive();
         InitializeTables();
+        InitializeFolding();
         SplitterMoved += SavePreviewRatio;
     }
 
@@ -202,6 +203,7 @@ public partial class EditorHost : UserControl
         if (tab is null)
         {
             Editor.Document = new TextDocument();
+            InstallFolding();
             Editor.SyntaxHighlighting = null;
             ApplyViewMode();
             TabShown?.Invoke(null);
@@ -210,6 +212,7 @@ public partial class EditorHost : UserControl
 
         tab.PropertyChanged += OnTabPropertyChanged;
         Editor.Document = tab.Document;
+        InstallFolding();
         ApplyHighlighting();
         UpdateCaretStatus();
         ApplyViewMode();
@@ -221,6 +224,8 @@ public partial class EditorHost : UserControl
     {
         if (e.PropertyName is nameof(DocumentTabViewModel.Language))
         {
+            CaptureFolds();
+            InstallFolding();
             ApplyHighlighting();
             ApplyViewMode();
             UpdateFormatBar();
@@ -266,6 +271,7 @@ public partial class EditorHost : UserControl
             return;
         }
 
+        CaptureFolds();
         _viewStates[_current] = new ViewState(Editor.CaretOffset, Editor.SelectionStart, Editor.SelectionLength, Editor.VerticalOffset, Editor.HorizontalOffset);
         _current.CaretOffset = Editor.CaretOffset;
         _current.SelectionStart = Editor.SelectionStart;

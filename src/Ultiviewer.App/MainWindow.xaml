@@ -156,6 +156,11 @@
                 <MenuItem Header="Single _editor" Command="{Binding UnsplitCommand}" />
                 <MenuItem Header="Switch to the _other editor" Command="{Binding FocusOtherGroupCommand}" InputGestureText="Ctrl+Shift+\" />
                 <Separator />
+                <MenuItem Command="editor:EditorCommands.Fold" />
+                <MenuItem Command="editor:EditorCommands.Unfold" />
+                <MenuItem Command="editor:EditorCommands.FoldAll" />
+                <MenuItem Command="editor:EditorCommands.UnfoldAll" />
+                <Separator />
                 <MenuItem Header="_Word wrap" IsCheckable="True" IsChecked="{Binding WordWrap}" />
                 <MenuItem Header="_Line numbers" IsCheckable="True" IsChecked="{Binding ShowLineNumbers}" />
                 <MenuItem Header="Show _whitespace" IsCheckable="True" IsChecked="{Binding ShowWhitespace}" />
@@ -257,6 +262,9 @@
                 </TabItem>
                 <TabItem Header="To-do" AutomationProperties.Name="To-do pane">
                     <views:TodoPane />
+                </TabItem>
+                <TabItem Header="Outline" AutomationProperties.Name="Outline pane">
+                    <views:OutlinePane />
                 </TabItem>
             </TabControl>
 

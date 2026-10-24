@@ -191,7 +191,7 @@ public partial class EditorHost
         }
     }
 
-    /// <summary>Tab / Shift+Tab on a list item indent or outdent the whole item, like OneNote.</summary>
+    /// <summary>Tab / Shift+Tab on a list item indent or outdent it together with its children, like OneNote.</summary>
     private bool HandleListIndent(KeyEventArgs e)
     {
         if (e.Key != Key.Tab || Keyboard.Modifiers is not (ModifierKeys.None or ModifierKeys.Shift) || Editor.SelectionLength > 0)
@@ -199,29 +199,19 @@ public partial class EditorHost
             return false;
         }
 
+        var outdent = Keyboard.Modifiers == ModifierKeys.Shift;
         var document = Editor.Document;
         var line = document.GetLineByOffset(Editor.CaretOffset);
-        var text = document.GetText(line);
-        if (!ListLine.IsMatch(text))
+        if (!ListLine.IsMatch(document.GetText(line)))
         {
             return false;
         }
 
-        var caret = Editor.CaretOffset - line.Offset;
-        if (Keyboard.Modifiers == ModifierKeys.None)
+        if (MarkdownOutline.IndentListItem(document.Text, Editor.CaretOffset, outdent, Editor.Options.IndentationString, Editor.Options.IndentationSize) is { } edit)
         {
-            document.Insert(line.Offset, Editor.Options.IndentationString);
-            Editor.CaretOffset = line.Offset + caret + Editor.Options.IndentationString.Length;
-            return true;
+            Apply(edit);
         }
 
-        var remove = text.StartsWith('\t') ? 1 : text.TakeWhile(c => c == ' ').Take(Editor.Options.IndentationSize).Count();
-        if (remove > 0)
-        {
-            document.Remove(line.Offset, remove);
-            Editor.CaretOffset = line.Offset + Math.Max(0, caret - remove);
-        }
-
-        return true;
+        return true; // on a list line Tab never inserts a tab character
     }
 }

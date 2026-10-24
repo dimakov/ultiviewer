@@ -81,21 +81,30 @@ public partial class EditorHost
     }
 
     /// <summary>In Live mode the text sits in a centered column at most <see cref="AppSettings.LiveMaxWidth"/> wide.</summary>
+    /// <remarks>
+    /// The left offset goes into the editor's padding, so the margins (folding, bookmarks) stay next to the text;
+    /// the text view keeps just enough room for code panels to reach left of the text.
+    /// </remarks>
     private void UpdateLiveMargins()
     {
         var view = Editor.TextArea.TextView;
+        _sourcePadding ??= Editor.Padding;
         if (_live is not { IsEnabled: true })
         {
             view.Margin = default;
+            Editor.Padding = _sourcePadding.Value;
             return;
         }
 
-        var minimum = LiveBackgroundRenderer.Bleed + 16;
+        var inner = LiveBackgroundRenderer.Bleed + 16;
         var maxWidth = _vm?.Settings.LiveMaxWidth ?? 0;
         var available = Editor.ActualWidth - SystemParameters.VerticalScrollBarWidth;
-        var side = maxWidth > 0 ? Math.Max(minimum, (available - maxWidth) / 2) : minimum;
-        view.Margin = new Thickness(Math.Round(side), 0, Math.Round(side), 0);
+        var side = maxWidth > 0 ? Math.Max(inner, (available - maxWidth) / 2) : inner;
+        Editor.Padding = new Thickness(Math.Round(side - inner), 0, 0, 0);
+        view.Margin = new Thickness(inner, 0, Math.Round(side), 0);
     }
+
+    private Thickness? _sourcePadding;
 
     /// <summary>A click in the empty margins beside the Live column puts the caret on the nearest text.</summary>
     private void OnLiveMarginMouseDown(object sender, MouseButtonEventArgs e)

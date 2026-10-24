@@ -11,8 +11,9 @@ internal sealed class LiveTransformer(LivePreview owner) : DocumentColorizingTra
 {
     protected override void ColorizeLine(DocumentLine line)
     {
-        // A widget (table) that spans several lines owns them; there is no text to style.
-        if (owner.Markup is not { } markup || CurrentContext.VisualLine.FirstDocumentLine != CurrentContext.VisualLine.LastDocumentLine)
+        // Lines hidden inside a multi-line element (a table widget, a folded section) have nothing to style;
+        // the first line of such a visual line still shows its own text.
+        if (owner.Markup is not { } markup || line != CurrentContext.VisualLine.FirstDocumentLine)
         {
             return;
         }

@@ -83,6 +83,12 @@ public static class EditorCommands
     public static RoutedUICommand TableSortDescending { get; } = Create("Sort rows Z → A by this column", nameof(TableSortDescending));
     public static RoutedUICommand TableFormat { get; } = Create("Tidy table (align columns)", nameof(TableFormat));
 
+    // Folding and outline (Markdown).
+    public static RoutedUICommand Fold { get; } = Create("Fold section", nameof(Fold), Key.OemOpenBrackets, ModifierKeys.Control | ModifierKeys.Shift);
+    public static RoutedUICommand Unfold { get; } = Create("Unfold section", nameof(Unfold), Key.OemCloseBrackets, ModifierKeys.Control | ModifierKeys.Shift);
+    public static RoutedUICommand FoldAll { get; } = Create("Fold all headings", nameof(FoldAll));
+    public static RoutedUICommand UnfoldAll { get; } = Create("Unfold all", nameof(UnfoldAll));
+
     /// <summary>Pastes clipboard text as is (no table conversion).</summary>
     public static RoutedUICommand PasteAsText { get; } = Create("Paste as plain text", nameof(PasteAsText), Key.V, ModifierKeys.Control | ModifierKeys.Alt);
 
@@ -95,6 +101,7 @@ public static class EditorCommands
         TableInsertRowAbove, TableInsertRowBelow, TableDeleteRow, TableMoveRowUp, TableMoveRowDown,
         TableInsertColumnLeft, TableInsertColumnRight, TableDeleteColumn, TableMoveColumnLeft, TableMoveColumnRight,
         TableAlignLeft, TableAlignCenter, TableAlignRight, TableAlignNone, TableSortAscending, TableSortDescending, TableFormat,
+        Fold, Unfold, FoldAll, UnfoldAll,
     };
 
     /// <summary>All commands that carry a keyboard shortcut, for binding and conflict removal.</summary>

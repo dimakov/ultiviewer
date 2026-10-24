@@ -91,6 +91,9 @@ public sealed partial class DocumentTabViewModel : ObservableObject
     /// <summary>True for Markdown pages inside an open notebook (autosaved like OneNote).</summary>
     public bool IsNotebookPage { get; set; }
 
+    /// <summary>First lines (1-based) of folded regions, as last captured by an editor (kept in the session).</summary>
+    public IReadOnlyList<int> FoldedLines { get; set; } = [];
+
     /// <summary>True once the on-disk text from before this session's edits went to version history.</summary>
     public bool HistoryBaselineRecorded { get; set; }
 
