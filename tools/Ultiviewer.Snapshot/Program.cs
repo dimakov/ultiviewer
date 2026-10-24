@@ -218,6 +218,17 @@ internal static class Program
             }
         }
 
+        if (step.Direction is { } direction)
+        {
+            vm.SetDirection(vm.ActiveTab, direction switch
+            {
+                "rtl" => Ultiviewer.Core.Text.TextDirectionMode.RightToLeft,
+                "ltr" => Ultiviewer.Core.Text.TextDirectionMode.LeftToRight,
+                _ => Ultiviewer.Core.Text.TextDirectionMode.Auto,
+            });
+            Pump(300);
+        }
+
         if (step.PasteHtml is { } pasteHtml)
         {
             Console.WriteLine("pasted as markdown: " + window.ActiveEditorHost.PasteHtml(pasteHtml) + " · " + vm.StatusMessage);
@@ -376,6 +387,7 @@ internal static class Program
                 "links" => "  linked from: " + string.Join(" | ", vm.Backlinks.Select(l => $"{l.Title}:{l.Line} {l.Text}"))
                     + Environment.NewLine + "  links: " + string.Join(" | ", vm.OutgoingLinks.Select(l => $"{l.Title} ({l.Location}, {l.State})"))
                     + Environment.NewLine + "  mentions: " + string.Join(" | ", vm.UnlinkedMentions.Select(l => $"{l.Title}:{l.Line} {l.Text}")),
+                "direction" => $"direction {vm.ActiveTab?.DirectionMode} rtl={vm.ActiveTab?.IsRightToLeft} editor={editor.FlowDirection} status={vm.ActiveTab?.DirectionLabel}",
                 "tasks" => string.Join(Environment.NewLine, vm.Tasks.Select(t => $"  [{t.Group}] {t.Description} | {t.DueLabel} {t.Extras}")),
                 "table" => "  columns: " + string.Join(", ", vm.TableColumns) + Environment.NewLine
                     + string.Join(Environment.NewLine, window.SearchView.TableRows.Select(r => "  " + r.Title + " | " + string.Join(" | ", vm.TableColumns.Select(c => r.Properties[c])) + " | " + r.MatchCount)),
@@ -724,6 +736,9 @@ internal sealed class Step
 
     /// <summary>Renders the quick-note window (off-screen, not activated) to this PNG.</summary>
     public string? CaptureWindow { get; set; }
+
+    /// <summary>Sets the active document's text direction: "rtl", "ltr" or "auto".</summary>
+    public string? Direction { get; set; }
 
     /// <summary>Pastes this HTML (or CF_HTML) into the active editor as a formatted paste, without the real clipboard.</summary>
     public string? PasteHtml { get; set; }
