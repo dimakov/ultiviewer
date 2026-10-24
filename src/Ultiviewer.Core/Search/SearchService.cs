@@ -7,7 +7,8 @@ namespace Ultiviewer.Core.Search;
 
 public sealed record SearchHit(int Line, int Column, int Length, string LineText);
 
-public sealed record PageResult(string Path, string Title, string? NotebookRoot, bool TitleMatched, IReadOnlyList<SearchHit> Hits);
+/// <param name="IsAttachment">A PDF or image: hits are per page (<see cref="SearchHit.Line"/> is the page number) and show a snippet.</param>
+public sealed record PageResult(string Path, string Title, string? NotebookRoot, bool TitleMatched, IReadOnlyList<SearchHit> Hits, bool IsAttachment = false);
 
 /// <summary>Where to search: everywhere, one notebook, a folder (section) or a single page.</summary>
 public sealed record SearchScope(string? Path)
@@ -91,6 +92,9 @@ public sealed class SearchService(string indexFolder) : IDisposable
         }
     }
 
+    /// <summary>Whether searches include text extracted from PDFs and images.</summary>
+    public bool IncludeAttachments { get; set; } = true;
+
     public void UpdateAll(CancellationToken cancellationToken = default)
     {
         foreach (var index in Indexes)
@@ -130,7 +134,7 @@ public sealed class SearchService(string indexFolder) : IDisposable
         {
             var candidates = await Task.Run(() => CandidatesFor(index, query, scope.Path, cancellationToken), cancellationToken);
             var delta = openBuffers.Keys.Where(p => FileSystemMoves.IsSameOrInside(p, index.Root) && InScope(p, scope)).ToList();
-            await foreach (var result in Confirm(candidates.Concat(delta), index.Root, matcher, openBuffers, seen, cancellationToken))
+            await foreach (var result in Confirm(candidates.Concat(delta), index, matcher, openBuffers, seen, cancellationToken))
             {
                 yield return result;
             }
@@ -152,7 +156,7 @@ public sealed class SearchService(string indexFolder) : IDisposable
         try
         {
             index.Update(cancellationToken);
-            return index.Candidates(query, scope);
+            return index.Candidates(query, scope, includeAttachments: IncludeAttachments);
         }
         catch (Exception ex) when (ex is SqliteException or IOException or UnauthorizedAccessException)
         {
@@ -163,7 +167,7 @@ public sealed class SearchService(string indexFolder) : IDisposable
 
     private static async IAsyncEnumerable<PageResult> Confirm(
         IEnumerable<string> paths,
-        string? root,
+        NotebookIndex? index,
         TextMatcher matcher,
         IReadOnlyDictionary<string, string> openBuffers,
         HashSet<string> seen,
@@ -173,7 +177,7 @@ public sealed class SearchService(string indexFolder) : IDisposable
         {
             cancellationToken.ThrowIfCancellationRequested();
             var results = await Task.Run(
-                () => batch.AsParallel().AsOrdered().WithCancellation(cancellationToken).Select(p => Evaluate(p, root, matcher, openBuffers)).ToList(),
+                () => batch.AsParallel().AsOrdered().WithCancellation(cancellationToken).Select(p => Evaluate(p, index, matcher, openBuffers)).ToList(),
                 cancellationToken);
             foreach (var result in results.OfType<PageResult>())
             {
@@ -182,8 +186,14 @@ public sealed class SearchService(string indexFolder) : IDisposable
         }
     }
 
-    private static PageResult? Evaluate(string path, string? root, TextMatcher matcher, IReadOnlyDictionary<string, string> openBuffers)
+    private static PageResult? Evaluate(string path, NotebookIndex? index, TextMatcher matcher, IReadOnlyDictionary<string, string> openBuffers)
     {
+        var root = index?.Root;
+        if (index is not null && !NotebookScanner.IsPageFile(path) && AttachmentFiles.IsAttachment(path))
+        {
+            return EvaluateAttachment(path, index, matcher);
+        }
+
         string text;
         if (!openBuffers.TryGetValue(path, out text!))
         {
@@ -211,6 +221,36 @@ public sealed class SearchService(string indexFolder) : IDisposable
 
         var hits = matcher.FindMatches(page).Select(m => new SearchHit(m.Line, m.Column, m.Length, page.Lines[m.Line - 1])).ToList();
         return new PageResult(path, title, root, matcher.TitleMatches(title), hits);
+    }
+
+    /// <summary>An attachment's stored text, one line per page, matched like a page; hits show a snippet of their page.</summary>
+    private static PageResult? EvaluateAttachment(string path, NotebookIndex index, TextMatcher matcher)
+    {
+        if (index.AttachmentText(path) is not { } pages)
+        {
+            return null;
+        }
+
+        var title = Path.GetFileName(path);
+        var content = new PageContent(title, string.Join('\n', pages));
+        if (!matcher.Matches(content))
+        {
+            return null;
+        }
+
+        var hits = matcher.FindMatches(content).Select(m => Snippet(m.Line, m.Column, m.Length, content.Lines[m.Line - 1])).ToList();
+        return new PageResult(path, title, index.Root, matcher.TitleMatches(title), hits, IsAttachment: true);
+    }
+
+    /// <summary>Up to 70 characters on either side of a match, with ellipses where the page text was cut.</summary>
+    internal static SearchHit Snippet(int line, int column, int length, string text)
+    {
+        const int context = 70;
+        var start = Math.Max(0, column - context);
+        var end = Math.Min(text.Length, column + length + context);
+        var prefix = start > 0 ? "…" : "";
+        var snippet = prefix + text[start..end] + (end < text.Length ? "…" : "");
+        return new SearchHit(line, column - start + prefix.Length, length, snippet);
     }
 
     private static bool InScope(string path, SearchScope scope) =>

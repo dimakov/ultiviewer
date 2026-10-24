@@ -24,7 +24,8 @@ public sealed record TaskRow(string Path, string Title, int Line, bool Done, str
 /// </summary>
 public sealed class NotebookIndex : IDisposable
 {
-    public const int SchemaVersion = 1;
+    /// <summary>2: attachments (PDF and image text) next to pages.</summary>
+    public const int SchemaVersion = 2;
 
     private readonly object _gate = new();
     private SqliteConnection _db;
@@ -113,7 +114,10 @@ public sealed class NotebookIndex : IDisposable
                 title_folded TEXT NOT NULL,
                 mtime INTEGER NOT NULL,
                 size INTEGER NOT NULL,
-                hash TEXT NOT NULL);
+                hash TEXT NOT NULL,
+                kind INTEGER NOT NULL DEFAULT 0);
+            CREATE TABLE AttachmentPages(page_id INTEGER NOT NULL REFERENCES Pages(id) ON DELETE CASCADE, page INTEGER NOT NULL, text TEXT NOT NULL);
+            CREATE INDEX AttachmentPages_page ON AttachmentPages(page_id);
             CREATE TABLE Blocks(id INTEGER PRIMARY KEY, page_id INTEGER NOT NULL REFERENCES Pages(id) ON DELETE CASCADE, line INTEGER NOT NULL, text TEXT NOT NULL);
             CREATE INDEX Blocks_page ON Blocks(page_id);
             CREATE TABLE Tags(page_id INTEGER NOT NULL REFERENCES Pages(id) ON DELETE CASCADE, line INTEGER NOT NULL, tag TEXT NOT NULL COLLATE NOCASE);
@@ -168,7 +172,7 @@ public sealed class NotebookIndex : IDisposable
         lock (_gate)
         {
             var known = new Dictionary<string, (long Mtime, long Size)>(StringComparer.OrdinalIgnoreCase);
-            using (var command = Command(_db, "SELECT path, mtime, size FROM Pages"))
+            using (var command = Command(_db, "SELECT path, mtime, size FROM Pages WHERE kind = 0"))
             using (var reader = command.ExecuteReader())
             {
                 while (reader.Read())
@@ -343,8 +347,141 @@ public sealed class NotebookIndex : IDisposable
 
     private void DeletePageRows(long id)
     {
-        Execute(_db, "DELETE FROM Blocks WHERE page_id = $id; DELETE FROM Tags WHERE page_id = $id; DELETE FROM Tasks WHERE page_id = $id;", ("$id", id));
+        Execute(_db, "DELETE FROM Blocks WHERE page_id = $id; DELETE FROM Tags WHERE page_id = $id; DELETE FROM Tasks WHERE page_id = $id; DELETE FROM AttachmentPages WHERE page_id = $id;", ("$id", id));
     }
+
+    // ---- Attachments ----
+
+    /// <summary>
+    /// Reads new or changed attachments (at most <paramref name="maxFiles"/> per call) and forgets deleted ones.
+    /// The slow part (PDF parsing, OCR) runs outside the lock, so searches don't wait for it. An unreadable file
+    /// is stored without text and only retried after it changes. Returns how many were read and how many wait.
+    /// </summary>
+    public (int Read, int Remaining) UpdateAttachments(IAttachmentReader reader, CancellationToken cancellationToken = default, int maxFiles = 10)
+    {
+        var files = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var file in AttachmentFiles.Enumerate(Root).Where(reader.CanRead))
+        {
+            files[Relative(file)] = file;
+        }
+
+        var known = new Dictionary<string, (long Mtime, long Size)>(StringComparer.OrdinalIgnoreCase);
+        lock (_gate)
+        {
+            using (var command = Command(_db, "SELECT path, mtime, size FROM Pages WHERE kind = 1"))
+            using (var rows = command.ExecuteReader())
+            {
+                while (rows.Read())
+                {
+                    known[rows.GetString(0)] = (rows.GetInt64(1), rows.GetInt64(2));
+                }
+            }
+
+            using var transaction = _db.BeginTransaction();
+            foreach (var gone in known.Keys.Where(k => !files.ContainsKey(k)).ToList())
+            {
+                RemoveCore(gone);
+            }
+
+            transaction.Commit();
+        }
+
+        var pending = files
+            .Select(f => (Relative: f.Key, Full: f.Value, Stamp: FileStamp.Read(f.Value)))
+            .Where(f => f.Stamp is { } stamp && (!known.TryGetValue(f.Relative, out var row) || row.Mtime != stamp.LastWriteUtc.Ticks || row.Size != stamp.Length))
+            .ToList();
+        var read = 0;
+        foreach (var (relative, full, stamp) in pending.Take(maxFiles))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            IReadOnlyList<string> pages;
+            try
+            {
+                pages = reader.Read(full, cancellationToken);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                pages = []; // damaged or locked: remember it, retry when the file changes
+            }
+
+            lock (_gate)
+            {
+                using var transaction = _db.BeginTransaction();
+                StoreAttachment(relative, full, stamp!.Value, pages);
+                transaction.Commit();
+            }
+
+            read++;
+        }
+
+        return (read, pending.Count - read);
+    }
+
+    /// <summary>The stored text of an attachment, one entry per page; null when the path isn't an indexed attachment.</summary>
+    public IReadOnlyList<string>? AttachmentText(string fullPath)
+    {
+        if (!IsInside(fullPath))
+        {
+            return null;
+        }
+
+        lock (_gate)
+        {
+            if (Scalar(_db, "SELECT id FROM Pages WHERE path = $p AND kind = 1", ("$p", Relative(fullPath))) is not long id)
+            {
+                return null;
+            }
+
+            var count = Convert.ToInt32(Scalar(_db, "SELECT coalesce(max(page), 0) FROM AttachmentPages WHERE page_id = $id", ("$id", id)));
+            var pages = Enumerable.Repeat("", count).ToArray();
+            using var command = Command(_db, "SELECT page, text FROM AttachmentPages WHERE page_id = $id", ("$id", id));
+            using var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                pages[reader.GetInt32(0) - 1] = reader.GetString(1);
+            }
+
+            return pages;
+        }
+    }
+
+    /// <summary>Forgets every attachment (searching attachments was turned off).</summary>
+    public void RemoveAttachments()
+    {
+        lock (_gate)
+        {
+            Execute(_db, "DELETE FROM Blocks WHERE page_id IN (SELECT id FROM Pages WHERE kind = 1); DELETE FROM AttachmentPages; DELETE FROM Pages WHERE kind = 1;");
+        }
+    }
+
+    private void StoreAttachment(string relative, string full, FileStamp stamp, IReadOnlyList<string> pages)
+    {
+        RemoveCore(relative);
+        var title = Path.GetFileName(full);
+        using var insert = Command(_db, "INSERT INTO Pages(path, title, title_folded, mtime, size, hash, kind) VALUES ($p, $t, $tf, $m, $s, '', 1) RETURNING id",
+            ("$p", relative), ("$t", title), ("$tf", TextFolding.Fold(title)), ("$m", stamp.LastWriteUtc.Ticks), ("$s", stamp.Length));
+        var id = (long)insert.ExecuteScalar()!;
+        using var block = Command(_db, "INSERT INTO Blocks(page_id, line, text) VALUES ($id, $l, $t)", ("$id", id), ("$l", 0), ("$t", ""));
+        using var page = Command(_db, "INSERT INTO AttachmentPages(page_id, page, text) VALUES ($id, $n, $t)", ("$id", id), ("$n", 0), ("$t", ""));
+        for (var i = 0; i < pages.Count; i++)
+        {
+            var text = Flatten(pages[i]);
+            if (text.Length == 0)
+            {
+                continue;
+            }
+
+            block.Parameters["$l"].Value = i + 1;
+            block.Parameters["$t"].Value = TextFolding.Fold(text);
+            block.ExecuteNonQuery();
+            page.Parameters["$n"].Value = i + 1;
+            page.Parameters["$t"].Value = text;
+            page.ExecuteNonQuery();
+        }
+    }
+
+    /// <summary>A page's text on one line (search hits are reported per line, which is per page for attachments).</summary>
+    private static string Flatten(string text) => string.Join(' ', text.Split((char[])['\r', '\n', '\t', ' '], StringSplitOptions.RemoveEmptyEntries));
 
     // ---- Querying ----
 
@@ -352,7 +489,7 @@ public sealed class NotebookIndex : IDisposable
     /// Pages that may match <paramref name="query"/> (full paths, most recently modified first), limited to
     /// <paramref name="scope"/>: null, a folder (everything below it) or a single page file.
     /// </summary>
-    public IReadOnlyList<string> Candidates(AndNode query, string? scope = null, int limit = 5000)
+    public IReadOnlyList<string> Candidates(AndNode query, string? scope = null, int limit = 5000, bool includeAttachments = true)
     {
         if (query.Items.Count == 0)
         {
@@ -361,6 +498,11 @@ public sealed class NotebookIndex : IDisposable
 
         var parameters = new List<(string, object)>();
         var sql = new StringBuilder("SELECT path FROM Pages WHERE ").Append(Compile(query, parameters));
+        if (!includeAttachments)
+        {
+            sql.Append(" AND kind = 0");
+        }
+
         if (scope is not null && IsInside(scope) && !FileSystemMoves.IsSamePath(scope, Root))
         {
             if (NotebookScanner.IsPageFile(scope) && !Directory.Exists(scope))
@@ -434,7 +576,7 @@ public sealed class NotebookIndex : IDisposable
     {
         lock (_gate)
         {
-            return Convert.ToInt32(Scalar(_db, "SELECT count(*) FROM Pages"));
+            return Convert.ToInt32(Scalar(_db, "SELECT count(*) FROM Pages WHERE kind = 0"));
         }
     }
 
