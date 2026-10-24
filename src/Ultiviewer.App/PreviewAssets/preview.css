@@ -87,11 +87,12 @@ header#page-header h1 {
 .markdown-body a.wikilink { border-bottom: 1px dashed var(--link); }
 .markdown-body a.wikilink:hover { text-decoration: none; border-bottom-style: solid; }
 
-.markdown-body ul, .markdown-body ol { padding-left: 2em; }
+.markdown-body ul, .markdown-body ol { padding-inline-start: 2em; }
 .markdown-body li + li { margin-top: 0.2em; }
 .markdown-body li.task-list-item { list-style: none; }
 .markdown-body li.task-list-item input[type="checkbox"] {
-  margin: 0 0.4em 0 -1.4em;
+  margin-block: 0;
+  margin-inline: -1.4em 0.4em;
   vertical-align: middle;
   width: 1em;
   height: 1em;
@@ -100,10 +101,10 @@ header#page-header h1 {
 }
 
 .markdown-body blockquote {
-  border-left: 0.25em solid var(--border);
+  border-inline-start: 0.25em solid var(--border);
   color: var(--quote);
   padding: 0 1em;
-  margin-left: 0;
+  margin-inline-start: 0;
 }
 
 .markdown-body code, .markdown-body kbd, .markdown-body pre {
@@ -111,7 +112,11 @@ header#page-header h1 {
   font-size: 0.88em;
 }
 
+/* Code and math read left to right even inside right-to-left paragraphs. */
+.markdown-body pre, .markdown-body .math, .markdown-body .katex-display { direction: ltr; text-align: left; unicode-bidi: isolate; }
+
 .markdown-body :not(pre) > code {
+  unicode-bidi: isolate;
   background: var(--subtle);
   border-radius: 6px;
   padding: 0.15em 0.4em;
@@ -134,7 +139,7 @@ header#page-header h1 {
   padding: 0.1em 0.4em;
 }
 
-.markdown-body table { border-collapse: collapse; display: block; overflow: auto; width: max-content; max-width: 100%; }
+.markdown-body table { border-collapse: collapse; display: block; overflow: auto; width: max-content; max-width: 100%; margin-inline-end: auto; }
 .markdown-body th, .markdown-body td { border: 1px solid var(--border); padding: 6px 13px; }
 .markdown-body th { font-weight: 600; background: var(--subtle); }
 .markdown-body tr:nth-child(2n) td { background: color-mix(in srgb, var(--subtle) 50%, transparent); }

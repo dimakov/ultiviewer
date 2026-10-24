@@ -10,10 +10,25 @@ public class MarkdownRendererTests
     {
         var html = MarkdownRenderer.ToHtml("# Title\n\nPara one\n\n- a\n- [x] done\n");
 
-        Assert.Contains("<h1 id=\"title\" data-line=\"1\">Title</h1>", html);
-        Assert.Contains("<p data-line=\"3\">Para one</p>", html);
+        Assert.Contains("<h1 id=\"title\" data-line=\"1\" dir=\"auto\">Title</h1>", html);
+        Assert.Contains("<p data-line=\"3\" dir=\"auto\">Para one</p>", html);
         Assert.Contains("data-line=\"6\"", html);
         Assert.Contains("type=\"checkbox\"", html);
+    }
+
+    [Fact]
+    public void ProseBlocksTakeTheirDirectionFromTheirTextButCodeDoesNot()
+    {
+        var html = MarkdownRenderer.ToHtml("שלום\n\n> ציטוט\n\n- פריט\n\n| א | ב |\n|---|---|\n| 1 | 2 |\n\n```\ncode\n```\n\n- English\n");
+
+        Assert.Contains("<p data-line=\"1\" dir=\"auto\">שלום</p>", html);
+        Assert.Contains("<blockquote data-line=\"3\" dir=\"rtl\">", html);
+        Assert.Contains("<ul data-line=\"5\" dir=\"rtl\">", html);
+        Assert.Contains("<li data-line=\"5\" dir=\"rtl\">", html);
+        Assert.Contains("<table data-line=\"7\" dir=\"rtl\">", html);
+        Assert.Contains("<ul data-line=\"15\" dir=\"ltr\">", html);
+        Assert.Contains("<th data-line=\"7\" dir=\"auto\">א</th>", html);
+        Assert.Contains("<pre><code data-line=\"11\">code", html);
     }
 
     [Fact]

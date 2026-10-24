@@ -17,7 +17,7 @@ editor edit ─► MainViewModel.DocumentEdited ─► EditorHost (debounce 180 
             ─► PreviewPane.Render(json) ─► PostWebMessageAsJson ─► preview.js: innerHTML swap, enhance(), scroll
 ```
 
-- `Core/Markdown/MarkdownRenderer.cs` — Markdig pipeline (`UseAdvancedExtensions`, `UseYamlFrontMatter`, `WikiLinkExtension`). Before rendering, every block gets `data-line="<1-based source line>"`.
+- `Core/Markdown/MarkdownRenderer.cs` — Markdig pipeline (`UseAdvancedExtensions`, `UseYamlFrontMatter`, `WikiLinkExtension`). Before rendering, every block gets `data-line="<1-based source line>"`, and a text direction: `dir="auto"` on paragraphs, headings and cells, an explicit `rtl`/`ltr` on lists, quotes and tables (see `right-to-left.md`).
 - `Core/Markdown/WikiLinkParser.cs` — inline parser for `[[target|label]]` → `<a class="wikilink" href="wiki:<escaped target>">`.
 - `Core/Links/WikiLinkResolver.cs` — title or `Section/Title` → page path; prefers the same folder, then the same notebook, then the shortest path.
 - `Core/Markdown/MarkdownHeadings.cs` — GitHub-style slugs, `#fragment` → heading line.

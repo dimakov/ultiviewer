@@ -28,6 +28,21 @@ public static partial class MarkdownRenderer
             {
                 block.GetAttributes().AddPropertyIfNotExist("data-line", (block.Line + 1).ToString(System.Globalization.CultureInfo.InvariantCulture));
             }
+
+            // Each paragraph, heading, list, quote and table takes its direction from its own text, so Hebrew
+            // paragraphs read right to left next to English ones (code and math stay left to right). Text blocks
+            // use dir="auto"; containers get an explicit direction from their source, because dir="auto" skips
+            // children that have their own dir (a list of dir="auto" items would always be left to right).
+            if (block is ParagraphBlock or HeadingBlock or Markdig.Extensions.Tables.TableCell)
+            {
+                block.GetAttributes().AddPropertyIfNotExist("dir", "auto");
+            }
+            else if (block is ListBlock or ListItemBlock or QuoteBlock or Markdig.Extensions.Tables.Table
+                && block.Span.Start >= 0 && block.Span.End < markdown.Length && block.Span.Length > 0
+                && Text.BidiText.Detect(markdown.Substring(block.Span.Start, block.Span.Length)) is { } rightToLeft)
+            {
+                block.GetAttributes().AddPropertyIfNotExist("dir", rightToLeft ? "rtl" : "ltr");
+            }
         }
 
         using var writer = new StringWriter();
