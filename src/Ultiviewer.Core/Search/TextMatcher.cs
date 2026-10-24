@@ -3,7 +3,7 @@ namespace Ultiviewer.Core.Search;
 /// <summary>One highlighted match: 1-based line, 0-based column and length in the original line text.</summary>
 public readonly record struct LineMatch(int Line, int Column, int Length);
 
-/// <summary>What a page offers to a query: its title, text lines, tags and tasks.</summary>
+/// <summary>What a page offers to a query: its title, text lines, tags, tasks and properties.</summary>
 public sealed class PageContent
 {
     public PageContent(string title, string text)
@@ -94,6 +94,7 @@ public sealed class TextMatcher
         TermNode term => page.Contains(TextFolding.Fold(term.Text)),
         TagNode tag => page.Source.Facts.Tags.Any(t => TagMatches(t.Tag, tag.Tag)),
         TaskNode task => page.Source.Facts.Tasks.Any(t => task.Done is null || t.Done == task.Done),
+        PropertyNode property => page.Source.Facts.Properties.Any(p => p.Key == property.Key && PropertyValues.Matches(property, p.Value)),
         _ => false,
     };
 
@@ -107,6 +108,7 @@ public sealed class TextMatcher
         OrNode or => or.Items.SelectMany(i => FactLines(i, page)),
         TagNode tag => page.Facts.Tags.Where(t => TagMatches(t.Tag, tag.Tag)).Select(t => t.Line),
         TaskNode task => page.Facts.Tasks.Where(t => task.Done is null || t.Done == task.Done).Select(t => t.Line),
+        PropertyNode property => page.Facts.Properties.Where(p => p.Key == property.Key && PropertyValues.Matches(property, p.Value)).Select(p => p.Line),
         _ => [],
     };
 

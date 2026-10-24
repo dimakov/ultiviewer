@@ -24,8 +24,8 @@ public sealed record TaskRow(string Path, string Title, int Line, bool Done, str
 /// </summary>
 public sealed class NotebookIndex : IDisposable
 {
-    /// <summary>2: attachments (PDF and image text) next to pages.</summary>
-    public const int SchemaVersion = 2;
+    /// <summary>2: attachments (PDF and image text) next to pages; 3: page properties.</summary>
+    public const int SchemaVersion = 3;
 
     private readonly object _gate = new();
     private SqliteConnection _db;
@@ -125,6 +125,9 @@ public sealed class NotebookIndex : IDisposable
             CREATE INDEX Tags_page ON Tags(page_id);
             CREATE TABLE Tasks(page_id INTEGER NOT NULL REFERENCES Pages(id) ON DELETE CASCADE, line INTEGER NOT NULL, done INTEGER NOT NULL, text TEXT NOT NULL);
             CREATE INDEX Tasks_page ON Tasks(page_id);
+            CREATE TABLE Properties(page_id INTEGER NOT NULL REFERENCES Pages(id) ON DELETE CASCADE, line INTEGER NOT NULL, key TEXT NOT NULL COLLATE NOCASE, value_folded TEXT NOT NULL, num REAL);
+            CREATE INDEX Properties_key ON Properties(key, value_folded);
+            CREATE INDEX Properties_page ON Properties(page_id);
 
             CREATE VIRTUAL TABLE BlocksTri USING fts5(text, content='Blocks', content_rowid='id', tokenize='trigram');
             CREATE VIRTUAL TABLE BlocksWords USING fts5(text, content='Blocks', content_rowid='id', tokenize='unicode61', prefix='1 2');
@@ -333,6 +336,19 @@ public sealed class NotebookIndex : IDisposable
             }
         }
 
+        using (var property = Command(_db, "INSERT INTO Properties(page_id, line, key, value_folded, num) VALUES ($id, $l, $k, $v, $n)",
+                   ("$id", id), ("$l", 0), ("$k", ""), ("$v", ""), ("$n", null)))
+        {
+            foreach (var item in facts.Properties)
+            {
+                property.Parameters["$l"].Value = item.Line;
+                property.Parameters["$k"].Value = item.Key;
+                property.Parameters["$v"].Value = PropertyValues.Fold(item.Value);
+                property.Parameters["$n"].Value = PropertyValues.TryNumber(item.Value, out var number) ? number : DBNull.Value;
+                property.ExecuteNonQuery();
+            }
+        }
+
         return true;
     }
 
@@ -347,7 +363,7 @@ public sealed class NotebookIndex : IDisposable
 
     private void DeletePageRows(long id)
     {
-        Execute(_db, "DELETE FROM Blocks WHERE page_id = $id; DELETE FROM Tags WHERE page_id = $id; DELETE FROM Tasks WHERE page_id = $id; DELETE FROM AttachmentPages WHERE page_id = $id;", ("$id", id));
+        Execute(_db, "DELETE FROM Blocks WHERE page_id = $id; DELETE FROM Tags WHERE page_id = $id; DELETE FROM Tasks WHERE page_id = $id; DELETE FROM Properties WHERE page_id = $id; DELETE FROM AttachmentPages WHERE page_id = $id;", ("$id", id));
     }
 
     // ---- Attachments ----
@@ -601,6 +617,8 @@ public sealed class NotebookIndex : IDisposable
                 return task.Done is null
                     ? "id IN (SELECT page_id FROM Tasks)"
                     : $"id IN (SELECT page_id FROM Tasks WHERE done = {Add(parameters, task.Done.Value ? 1 : 0)})";
+            case PropertyNode property:
+                return "id IN (SELECT page_id FROM Properties WHERE key = " + Add(parameters, property.Key) + PropertyCondition(property, parameters) + ")";
             case TermNode term:
             {
                 var folded = TextFolding.Fold(term.Text);
@@ -618,6 +636,30 @@ public sealed class NotebookIndex : IDisposable
             default:
                 return "0";
         }
+    }
+
+    /// <summary>The SQL side of <see cref="PropertyValues.Matches"/> (a superset is fine: matches are confirmed on the text).</summary>
+    private static string PropertyCondition(PropertyNode property, List<(string, object)> parameters)
+    {
+        var folded = PropertyValues.Fold(property.Value);
+        var numeric = PropertyValues.TryNumber(property.Value, out var number);
+        var op = property.Op switch
+        {
+            PropertyOp.Less => "<",
+            PropertyOp.LessOrEqual => "<=",
+            PropertyOp.Greater => ">",
+            PropertyOp.GreaterOrEqual => ">=",
+            _ => "=",
+        };
+        return property.Op switch
+        {
+            PropertyOp.Exists => "",
+            PropertyOp.Equals when folded.Contains('*') =>
+                $" AND value_folded LIKE {Add(parameters, string.Join("%", folded.Split('*').Select(EscapeLike)))} ESCAPE '\\'",
+            _ when numeric =>
+                $" AND (num {op} {Add(parameters, number)} OR (num IS NULL AND value_folded {op} {Add(parameters, folded)}))",
+            _ => $" AND value_folded {op} {Add(parameters, folded)}",
+        };
     }
 
     private static string Add(List<(string, object)> parameters, object value)

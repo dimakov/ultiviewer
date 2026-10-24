@@ -8,7 +8,14 @@ namespace Ultiviewer.Core.Search;
 public sealed record SearchHit(int Line, int Column, int Length, string LineText);
 
 /// <param name="IsAttachment">A PDF or image: hits are per page (<see cref="SearchHit.Line"/> is the page number) and show a snippet.</param>
-public sealed record PageResult(string Path, string Title, string? NotebookRoot, bool TitleMatched, IReadOnlyList<SearchHit> Hits, bool IsAttachment = false);
+public sealed record PageResult(string Path, string Title, string? NotebookRoot, bool TitleMatched, IReadOnlyList<SearchHit> Hits, bool IsAttachment = false)
+{
+    /// <summary>The page's properties (front matter and <c>key:: value</c> fields), for the results table.</summary>
+    public IReadOnlyList<PageProperty> Properties { get; init; } = [];
+
+    /// <summary>Last write time of the file (local time); <see cref="DateTime.MinValue"/> if unknown.</summary>
+    public DateTime Modified { get; init; }
+}
 
 /// <summary>Where to search: everywhere, one notebook, a folder (section) or a single page.</summary>
 public sealed record SearchScope(string? Path)
@@ -220,7 +227,11 @@ public sealed class SearchService(string indexFolder) : IDisposable
         }
 
         var hits = matcher.FindMatches(page).Select(m => new SearchHit(m.Line, m.Column, m.Length, page.Lines[m.Line - 1])).ToList();
-        return new PageResult(path, title, root, matcher.TitleMatches(title), hits);
+        return new PageResult(path, title, root, matcher.TitleMatches(title), hits)
+        {
+            Properties = page.Facts.Properties,
+            Modified = LastWrite(path),
+        };
     }
 
     /// <summary>An attachment's stored text, one line per page, matched like a page; hits show a snippet of their page.</summary>
@@ -239,7 +250,19 @@ public sealed class SearchService(string indexFolder) : IDisposable
         }
 
         var hits = matcher.FindMatches(content).Select(m => Snippet(m.Line, m.Column, m.Length, content.Lines[m.Line - 1])).ToList();
-        return new PageResult(path, title, index.Root, matcher.TitleMatches(title), hits, IsAttachment: true);
+        return new PageResult(path, title, index.Root, matcher.TitleMatches(title), hits, IsAttachment: true) { Modified = LastWrite(path) };
+    }
+
+    private static DateTime LastWrite(string path)
+    {
+        try
+        {
+            return File.Exists(path) ? File.GetLastWriteTime(path) : DateTime.MinValue;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return DateTime.MinValue;
+        }
     }
 
     /// <summary>Up to 70 characters on either side of a match, with ellipses where the page text was cut.</summary>
