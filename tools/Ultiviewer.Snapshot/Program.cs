@@ -48,7 +48,8 @@ internal static class Program
         };
         var settings = AppSettings.Load();
         ThemeService.Instance.Apply(script.Theme == "dark" ? ThemePreference.Dark : ThemePreference.Light);
-        var vm = new MainViewModel(settings, SessionState.Load(), new DialogService(), new NotebookOperations(new RecycleBinDeleter()));
+        var dialogs = new ScriptDialogs();
+        var vm = new MainViewModel(settings, SessionState.Load(), dialogs, new NotebookOperations(new RecycleBinDeleter()));
         var window = new MainWindow(vm)
         {
             ShowActivated = false,
@@ -69,6 +70,7 @@ internal static class Program
         {
             foreach (var step in script.Steps)
             {
+                dialogs.ConfirmAnswer = step.Confirm ?? dialogs.ConfirmAnswer;
                 Run(step, vm, window, editor);
             }
         }
@@ -133,6 +135,23 @@ internal static class Program
             PressKey(editor, Enum.Parse<Key>(keyName, ignoreCase: true));
         }
 
+        if (step.Save && vm.ActiveTab is { } saving)
+        {
+            vm.SaveTab(saving, interactive: false);
+        }
+
+        if (step.External is { } external && vm.ActiveTab?.Path is { } externalPath)
+        {
+            File.WriteAllText(externalPath, external);
+            File.SetLastWriteTimeUtc(externalPath, DateTime.UtcNow.AddSeconds(1));
+            vm.CheckAllDiskStates();
+        }
+
+        if (step.History is { } history && vm.ActiveTab is { } historyTab && vm.History is { } store)
+        {
+            ShowHistory(vm, historyTab, store, history);
+        }
+
         if (step.Click is { } click)
         {
             Click(editor, click, step.ClickIndex);
@@ -179,6 +198,45 @@ internal static class Program
         {
             target.RaiseEvent(new KeyEventArgs(Keyboard.PrimaryDevice, source, Environment.TickCount, key) { RoutedEvent = Keyboard.KeyDownEvent });
         }
+    }
+
+    /// <summary>Opens the history window off-screen (never activated), optionally selects, restores and snapshots.</summary>
+    private static void ShowHistory(MainViewModel vm, DocumentTabViewModel tab, Ultiviewer.Core.History.VersionHistory store, HistoryStep step)
+    {
+        var model = new HistoryViewModel(vm, tab, store);
+        var window = new Ultiviewer.App.Views.HistoryWindow(model)
+        {
+            ShowActivated = false,
+            ShowInTaskbar = false,
+            WindowStartupLocation = WindowStartupLocation.Manual,
+            Left = -32000,
+            Top = -32000,
+        };
+        window.Show();
+        Pump(300);
+        Console.WriteLine("versions: " + string.Join(" | ", model.Versions.Select(v => $"{v.Label} · {v.Detail}")));
+        if (step.Select is { } index)
+        {
+            model.Selected = model.Versions[index];
+        }
+
+        model.ShowChanges = !step.Whole;
+        Pump(300);
+        Console.WriteLine("summary: " + model.Summary);
+        if (step.Shot is { } shot)
+        {
+            Save(window, shot);
+            Console.WriteLine($"saved {shot}");
+        }
+
+        if (step.Restore)
+        {
+            model.Restore();
+            Pump(200);
+            Console.WriteLine("restored; versions now: " + model.Versions.Count);
+        }
+
+        window.Close();
     }
 
     /// <summary>
@@ -243,6 +301,36 @@ internal static class Program
     }
 }
 
+/// <summary>Dialogs never appear in snapshots: messages go to the console and confirmations follow the script.</summary>
+internal sealed class ScriptDialogs : IDialogService
+{
+    public bool ConfirmAnswer { get; set; }
+
+    public void ShowError(string message) => Console.WriteLine("error dialog: " + message);
+
+    public void ShowInfo(string message) => Console.WriteLine("info dialog: " + message);
+
+    public bool Confirm(string message, bool warning = false)
+    {
+        Console.WriteLine($"confirm ({(ConfirmAnswer ? "yes" : "no")}): {message}");
+        return ConfirmAnswer;
+    }
+
+    public bool? AskYesNoCancel(string message)
+    {
+        Console.WriteLine("yes/no/cancel (cancel): " + message);
+        return null;
+    }
+
+    public string? PickFolder(string title, string? initialFolder = null) => null;
+
+    public string? PickFile(string title, string filter = "All files|*.*") => null;
+
+    public string? PickSaveFile(string title, string fileName, string filter) => null;
+
+    public string? Prompt(string title, string label, string initial = "", Func<string, string?>? validate = null) => null;
+}
+
 /// <summary>A snapshot script: where state lives, the window, the file to open and the steps to run.</summary>
 internal sealed class Script
 {
@@ -279,6 +367,17 @@ internal sealed class Step
 
     public string? Type { get; set; }
 
+    /// <summary>Saves the active tab (as autosave would).</summary>
+    public bool Save { get; set; }
+
+    /// <summary>Overwrites the active file on disk with this text, as another program would, and checks for changes.</summary>
+    public string? External { get; set; }
+
+    /// <summary>The answer to confirmation dialogs from this step on.</summary>
+    public bool? Confirm { get; set; }
+
+    public HistoryStep? History { get; set; }
+
     public string? Key { get; set; }
 
     /// <summary>Class name of a visual in the text view to click (see <see cref="Program"/>), with <see cref="ClickIndex"/>.</summary>
@@ -295,4 +394,18 @@ internal sealed class Step
     public string? Dump { get; set; }
 
     public string? Print { get; set; }
+}
+
+/// <summary>Opens the active tab's history window.</summary>
+internal sealed class HistoryStep
+{
+    /// <summary>Index in the version list to select.</summary>
+    public int? Select { get; set; }
+
+    /// <summary>Show the whole version instead of the changes.</summary>
+    public bool Whole { get; set; }
+
+    public bool Restore { get; set; }
+
+    public string? Shot { get; set; }
 }
