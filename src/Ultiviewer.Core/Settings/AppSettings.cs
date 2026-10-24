@@ -49,6 +49,9 @@ public sealed class AppSettings
     /// <summary>The "Basic Text" formatting toolbar above Markdown documents.</summary>
     public bool ShowFormatBar { get; set; } = true;
 
+    /// <summary>Formatted text pasted from browsers and Word becomes Markdown (Ctrl+Alt+V still pastes plain text).</summary>
+    public bool PasteHtmlAsMarkdown { get; set; } = true;
+
     /// <summary>Notebook pages save themselves this long after the last edit.</summary>
     public int AutosaveDelayMs { get; set; } = 1000;
 

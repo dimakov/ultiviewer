@@ -56,6 +56,7 @@
                 <CheckBox Margin="0,6,0,0" Content="Show whitespace and line endings" IsChecked="{Binding ShowWhitespace}" />
                 <CheckBox Margin="0,6,0,0" Content="Highlight the current line" IsChecked="{Binding HighlightCurrentLine}" />
                 <CheckBox Margin="0,6,0,0" Content="Show the formatting toolbar (bold, headings, lists…) for notes" IsChecked="{Binding ShowFormatBar}" />
+                <CheckBox Margin="0,6,0,0" Content="Paste formatted text from browsers and Word as Markdown (Ctrl+Alt+V pastes plain text)" IsChecked="{Binding PasteHtmlAsMarkdown}" />
 
                 <TextBlock Style="{StaticResource Section}" Text="Saving" />
                 <CheckBox Content="Save notebook pages automatically (like OneNote)" IsChecked="{Binding AutosaveNotebookPages}" />

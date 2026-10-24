@@ -30,6 +30,7 @@
                 <Separator />
                 <MenuItem Header="To_day's note" Command="{Binding OpenTodayCommand}" InputGestureText="Ctrl+Shift+D" />
                 <MenuItem Header="_Quick note…" Command="{Binding ShowQuickNoteCommand}" />
+                <MenuItem Header="Clip _web page…" Command="{Binding ClipWebPageCommand}" />
                 <Separator />
                 <MenuItem Header="New _file" Command="{Binding NewFileCommand}" InputGestureText="Ctrl+T" />
                 <MenuItem Header="_Open file…" Command="{Binding OpenFileCommand}" InputGestureText="Ctrl+O" />

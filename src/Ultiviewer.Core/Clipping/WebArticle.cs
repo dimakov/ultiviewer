@@ -78,9 +78,9 @@ public sealed partial class WebArticle
         }
 
         title = Collapse(title ?? "");
-        if (siteName is not null && (title.EndsWith(" - " + siteName, StringComparison.OrdinalIgnoreCase) || title.EndsWith(" | " + siteName, StringComparison.OrdinalIgnoreCase)))
+        if (siteName is not null && SiteSuffix().Match(title) is { Success: true } suffix && suffix.Groups[1].Value.Equals(siteName, StringComparison.OrdinalIgnoreCase))
         {
-            title = title[..^(siteName.Length + 3)].Trim();
+            title = title[..suffix.Index].Trim();
         }
 
         var byline = Meta("author", "article:author", "twitter:creator") ?? document.QuerySelector("[rel=author], [itemprop=author], .byline, .author")?.TextContent;
@@ -93,6 +93,14 @@ public sealed partial class WebArticle
         var body = document.Body ?? document.DocumentElement;
         RemoveClutter(body);
         var content = PickContent(body);
+
+        // "Article title – Site": the article's own heading is the better name when the title starts with it.
+        if (content.QuerySelector("h1") is { } heading && Collapse(heading.TextContent) is { Length: > 0 } headingText
+            && title.StartsWith(headingText, StringComparison.OrdinalIgnoreCase))
+        {
+            title = headingText;
+        }
+
         return new WebArticle(url, title.Length > 0 ? title : url.Host, byline, siteName, content);
     }
 
@@ -107,9 +115,9 @@ public sealed partial class WebArticle
         var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var converter = new HtmlToMarkdown(Url, (source, _) =>
         {
-            if (!Uri.TryCreate(source, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https" or "file"))
+            if (!Uri.TryCreate(source, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https" or "file") || uri.IsFile && !Url.IsFile)
             {
-                return null; // inline data and unknown schemes are dropped
+                return null; // inline data, unknown schemes, and local files named by a web page are dropped
             }
 
             if (images.FirstOrDefault(i => i.Source == uri) is { } known)
@@ -255,8 +263,11 @@ public sealed partial class WebArticle
 
     private static string Collapse(string text) => Whitespace().Replace(text, " ").Trim();
 
-    [GeneratedRegex(@"[\s ]+")]
+    [GeneratedRegex(@"[\s\u00A0]+")]
     private static partial Regex Whitespace();
+
+    [GeneratedRegex(@"\s+[-|–—·:]+\s+([^-|–—·]+)$")]
+    private static partial Regex SiteSuffix();
 
     [GeneratedRegex(@"comment|share|social|promo|related|footer|navbar|menu|sidebar|cookie|subscribe|newsletter|advert|\bads?\b|banner|breadcrumb|popup|modal|signup|login|recommend", RegexOptions.IgnoreCase)]
     private static partial Regex Clutter();

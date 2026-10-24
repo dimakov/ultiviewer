@@ -27,6 +27,7 @@ public partial class EditorHost
         CommandManager.AddPreviewCanExecuteHandler(Editor.TextArea, OnPreviewCanExecute);
         Editor.TextArea.PreviewKeyDown += OnTextAreaPreviewKeyDown;
         Editor.TextArea.TextEntered += OnTextEntered;
+        DataObject.AddCopyingHandler(Editor.TextArea, OnCopying);
         Editor.PreviewDragOver += OnEditorDragOver;
         Editor.PreviewDrop += OnEditorDrop;
     }
@@ -65,7 +66,7 @@ public partial class EditorHost
         {
             if (Clipboard.ContainsText())
             {
-                e.Handled = PasteTable(Clipboard.GetText()); // otherwise an ordinary text paste
+                e.Handled = PasteTable(Clipboard.GetText()) || PasteFormatted(); // otherwise an ordinary text paste
                 return;
             }
 

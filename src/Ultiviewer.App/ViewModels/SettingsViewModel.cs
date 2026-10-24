@@ -26,6 +26,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         _showWhitespace = settings.ShowWhitespace;
         _highlightCurrentLine = settings.HighlightCurrentLine;
         _showFormatBar = settings.ShowFormatBar;
+        _pasteHtmlAsMarkdown = settings.PasteHtmlAsMarkdown;
         _autosaveNotebookPages = settings.AutosaveNotebookPages;
         _autosaveExternalFiles = settings.AutosaveExternalFiles;
         _autosaveDelayMs = settings.AutosaveDelayMs;
@@ -144,6 +145,9 @@ public sealed partial class SettingsViewModel : ObservableObject
     private bool _showFormatBar;
 
     [ObservableProperty]
+    private bool _pasteHtmlAsMarkdown;
+
+    [ObservableProperty]
     private bool _autosaveNotebookPages;
 
     [ObservableProperty]
@@ -215,6 +219,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         settings.ShowWhitespace = ShowWhitespace;
         settings.HighlightCurrentLine = HighlightCurrentLine;
         settings.ShowFormatBar = ShowFormatBar;
+        settings.PasteHtmlAsMarkdown = PasteHtmlAsMarkdown;
         settings.AutosaveNotebookPages = AutosaveNotebookPages;
         settings.AutosaveExternalFiles = AutosaveExternalFiles;
         settings.AutosaveDelayMs = Math.Clamp(AutosaveDelayMs, 200, 60000);

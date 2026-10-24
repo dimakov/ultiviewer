@@ -4,7 +4,7 @@
 
 | Feature | How |
 |---|---|
-| Paste screenshots | Ctrl+V with an image on the clipboard saves `Title.assets/yyyyMMdd-HHmmss.png` next to the page and inserts `![…](Title.assets/….png)`. Copied files (Explorer Ctrl+C) paste as attachments. |
+| Paste screenshots | Ctrl+V with an image on the clipboard saves `Title.assets/yyyyMMdd-HHmmss.png` next to the page and inserts `![…](Title.assets/….png)`. Copied files (Explorer Ctrl+C) paste as attachments. Formatted HTML (browsers, Word, Google Docs) pastes as Markdown; see `formatted-paste-and-web-clipper.md`. |
 | Drop files | Dropping files on a Markdown page copies them into `Title.assets/` and inserts links (images inline). Shift+drop, or dropping on other documents, opens the files instead. |
 | Lists | Enter continues `-`/`*`/`+` bullets, numbered items (incremented), tasks (`- [ ]`) and `>` quotes; Enter on an empty item ends the list. |
 | `[[` completion | Typing `[[` lists page titles; choosing one inserts `Title]]`. |

@@ -251,15 +251,7 @@ public sealed partial class MainViewModel
             return;
         }
 
-        var (container, after) = target.Kind is NodeKind.Notebook or NodeKind.Section
-            ? (target.Path, (string?)null)
-            : (target.Node.ParentFolder, target.Node.EntryName);
-        if (Core.Files.FileSystemMoves.IsSameOrInside(container, Path.Combine(target.Root.Path, PageTemplates.FolderName)))
-        {
-            // Never create pages among the templates themselves.
-            (container, after) = (target.Root.Path, null);
-        }
-
+        var (container, after) = NewPageContainer(target);
         var suggested = NotebookOperations.UniqueName(container, Path.GetFileNameWithoutExtension(templatePath));
         var title = _dialogs.Prompt("New page from template", "Page title:", suggested, t =>
             FileNameRules.Validate(t) ?? (File.Exists(Path.Combine(container, t + NotebookScanner.PageExtension)) ? "A page with this title already exists here." : null));

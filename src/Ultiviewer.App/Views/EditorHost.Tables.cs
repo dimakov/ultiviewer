@@ -123,7 +123,18 @@ public partial class EditorHost
             return false;
         }
 
-        // A table needs blank lines around it, or neighbouring text joins it.
+        InsertBlock(table, newLine);
+        _vm!.StatusMessage = $"Pasted {rows.Count} rows as a table (Ctrl+Alt+V pastes the plain text)";
+        return true;
+    }
+
+    /// <summary>
+    /// Replaces the selection with Markdown blocks (a table, pasted paragraphs), adding the blank lines they need
+    /// so neighbouring text doesn't join them; the caret ends after the block.
+    /// </summary>
+    private void InsertBlock(string block, string newLine)
+    {
+        var document = Editor.Document;
         var start = Editor.SelectionStart;
         var end = start + Editor.SelectionLength;
         var startLine = document.GetLineByOffset(start);
@@ -134,11 +145,9 @@ public partial class EditorHost
         var lineBelow = endLine.NextLine is { } below && document.GetText(below).Trim().Length > 0;
         var prefix = textBefore ? newLine + newLine : lineAbove && start == startLine.Offset ? newLine : "";
         var suffix = textAfter ? newLine + newLine : lineBelow ? newLine + newLine : newLine;
-        var insertion = prefix + table + suffix;
+        var insertion = prefix + block + suffix;
         document.Replace(start, end - start, insertion);
-        Editor.Select(start + prefix.Length + table.Length, 0);
-        _vm!.StatusMessage = $"Pasted {rows.Count} rows as a table (Ctrl+Alt+V pastes the plain text)";
-        return true;
+        Editor.Select(start + prefix.Length + block.Length, 0);
     }
 
     private void PasteAsText()

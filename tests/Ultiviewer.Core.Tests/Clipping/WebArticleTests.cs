@@ -92,6 +92,18 @@ public class WebArticleTests
     }
 
     [Theory]
+    [InlineData("Sourdough basics – Bread Blog", "<h1>Sourdough basics</h1>", "Sourdough basics")]
+    [InlineData("Weekly report · Acme", "<h1>Something else</h1>", "Weekly report")]
+    [InlineData("No heading here", "", "No heading here")]
+    public void TrimsTheSiteNameFromTitles(string title, string heading, string expected)
+    {
+        var html = $"<html><head><title>{title}</title><meta property='og:site_name' content='{title.Split(' ').Last()}'></head>"
+            + $"<body><article>{heading}<p>{new string('x', 300)}</p></article></body></html>";
+
+        Assert.Equal(expected, WebArticle.Parse(html, new Uri("https://site.test/")).Title);
+    }
+
+    [Theory]
     [InlineData("Breaking: News | Site", "Breaking - News - Site")]
     [InlineData("What? *Really* <yes>", "What Really yes")]
     [InlineData("  ...  ", "Clipped page")]
