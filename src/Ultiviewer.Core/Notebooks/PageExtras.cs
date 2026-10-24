@@ -55,9 +55,22 @@ public static class PageTemplates
             : [];
     }
 
-    /// <summary>Fills <c>{{title}}</c>, <c>{{date}}</c>, <c>{{time}}</c> and <c>{{datetime}}</c>.</summary>
+    /// <summary>
+    /// Fills <c>{{title}}</c>, <c>{{date}}</c>, <c>{{time}}</c>, <c>{{datetime}}</c> and, as in Obsidian,
+    /// <c>{{date:dddd, d MMMM yyyy}}</c> with any .NET date format.
+    /// </summary>
     public static string Apply(string template, string title, DateTime now, string dateFormat, string timeFormat) =>
-        template
+        System.Text.RegularExpressions.Regex.Replace(template, @"\{\{date:(?<format>[^}]+)\}\}", m =>
+            {
+                try
+                {
+                    return now.ToString(m.Groups["format"].Value, System.Globalization.CultureInfo.CurrentCulture);
+                }
+                catch (FormatException)
+                {
+                    return m.Value;
+                }
+            }, System.Text.RegularExpressions.RegexOptions.IgnoreCase)
             .Replace("{{title}}", title, StringComparison.OrdinalIgnoreCase)
             .Replace("{{datetime}}", now.ToString(dateFormat + " " + timeFormat), StringComparison.OrdinalIgnoreCase)
             .Replace("{{date}}", now.ToString(dateFormat), StringComparison.OrdinalIgnoreCase)
