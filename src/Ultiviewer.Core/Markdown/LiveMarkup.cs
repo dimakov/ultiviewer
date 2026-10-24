@@ -41,6 +41,9 @@ public enum LiveStyle
     FrontMatter,
     TaskDone,
     TableRow,
+
+    /// <summary>Task metadata such as due dates, recurrence and reminders (Obsidian Tasks syntax).</summary>
+    TaskMeta,
 }
 
 /// <summary>
@@ -552,6 +555,11 @@ public sealed partial class LiveMarkup
             if (task.Checked && textStart < lineEnd)
             {
                 Add(textStart, lineEnd - textStart, LiveStyle.TaskDone, (textStart, lineEnd));
+            }
+
+            foreach (Match field in TaskInfo.Field().Matches(_text[textStart..lineEnd]))
+            {
+                Add(textStart + field.Index, field.Length, LiveStyle.TaskMeta, (textStart, lineEnd));
             }
 
             return;

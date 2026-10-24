@@ -102,6 +102,8 @@ public class LiveMarkupTests
         var styles = Styles("- [x] done\n- [ ] open");
 
         Assert.Contains(("done", LiveStyle.TaskDone), styles);
+        Assert.Contains(("📅 2026-10-25", LiveStyle.TaskMeta), Styles("- [ ] pay 📅 2026-10-25 ⏫"));
+        Assert.Contains(("⏫", LiveStyle.TaskMeta), Styles("- [ ] pay 📅 2026-10-25 ⏫"));
         Assert.DoesNotContain(styles, s => s is { Style: LiveStyle.TaskDone, Text: "open" });
     }
 

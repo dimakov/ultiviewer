@@ -73,6 +73,9 @@ public sealed class SessionState
 
     public List<string> RecentSearches { get; set; } = [];
 
+    /// <summary>Reminders already shown ("path|yyyy-MM-dd HH:mm|text"), so a restart doesn't repeat them.</summary>
+    public List<string> ShownReminders { get; set; } = [];
+
     public void Save() => JsonFileStore.Save(AppPaths.SessionFile, this);
 
     public static SessionState Load() => JsonFileStore.Load<SessionState>(AppPaths.SessionFile);
