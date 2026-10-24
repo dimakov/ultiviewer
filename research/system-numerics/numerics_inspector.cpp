@@ -551,6 +551,24 @@ void report(const std::string& path) {
                     hex(token.data(), token.size()).c_str());
     }
 
+    // Types used from each reference: TypeRef rows whose ResolutionScope is an AssemblyRef. This answers
+    // "what would break if that assembly were missing?"
+    std::printf("\n[Types used from each reference]\n");
+    for (uint32_t r = 1; r <= md.rows[AssemblyRef]; r++) {
+        std::string used;
+        uint32_t count = 0;
+        for (uint32_t t = 1; t <= md.rows[TypeRef]; t++) {
+            auto [scope, scopeRow] = md.decode(ResolutionScope, md.get(TypeRef, t, 0));
+            if (scope != AssemblyRef || scopeRow != r) continue;
+            if (++count <= 8) {
+                const std::string ns = md.string(md.get(TypeRef, t, 2));
+                used += (used.empty() ? "" : ", ") + ns + (ns.empty() ? "" : ".") + md.string(md.get(TypeRef, t, 1));
+            }
+        }
+        std::printf("  %s: %u%s%s%s\n", md.string(md.get(AssemblyRef, r, 6)).c_str(), count, count ? " (" : "", used.c_str(),
+                    count > 8 ? ", ...)" : count ? ")" : "");
+    }
+
     // Types defined here. Row 1 is always <Module>, the holder of global functions and fields.
     std::printf("\n[Types defined here: %u]\n", md.rows[TypeDef]);
     for (uint32_t t = 1; t <= md.rows[TypeDef] && t <= 12; t++) {

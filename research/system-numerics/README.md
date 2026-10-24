@@ -56,6 +56,29 @@ split into many small reference assemblies, while the implementation lives in a 
 references `netstandard`, the general compatibility facade. The file is in the folder only because a
 self-contained build copies the entire framework.
 
+## Can it be deleted?
+
+It can be deleted, but it shouldn't be. The checks:
+
+- **Nothing uses it.** Of the 270 DLLs in the publish folder, two reference `System.Numerics`:
+  `DirectWriteForwarder.dll` (WPF's text renderer) and `System.Printing.dll`. Both are C++/CLI assemblies, and
+  the inspector's "Types used from each reference" section shows that neither uses a single type from it. The
+  C++/CLI compiler adds the reference by default.
+- **The app still starts.** A self-contained .NET 10 test app with `System.Numerics.dll` removed still starts,
+  even though `deps.json` lists the file, and `Vector3` works normally. Only an old-style lookup,
+  `Type.GetType("System.Numerics.Vector3, System.Numerics")`, fails with `FileNotFoundException`, and only at
+  that moment.
+
+It isn't worth doing, though:
+
+- It saves 15 KB of 250 MB.
+- The next publish puts it back.
+- A plugin or library built for the .NET Framework would fail only when it first touched one of these types.
+
+To shrink the folder, change the build instead. English-only satellite resources removes 221 files, a
+single-file publish packs everything into one exe, and a framework-dependent build removes the runtime. WPF
+apps can't use .NET's trimmer, which is what would safely remove unused files like this one.
+
 ## Anatomy of the file
 
 `numerics_inspector.cpp` reads the file with plain C++ and no libraries, and prints each part. Its sections
