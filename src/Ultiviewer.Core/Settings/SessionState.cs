@@ -27,6 +27,9 @@ public sealed class OpenTabState
 
     /// <summary>Bookmarked line numbers (1-based).</summary>
     public List<int> Bookmarks { get; set; } = [];
+
+    /// <summary>First lines (1-based) of folded sections, code blocks and list items.</summary>
+    public List<int> Folded { get; set; } = [];
 }
 
 /// <summary>Per-machine UI state, stored in <see cref="AppPaths.SessionFile"/>.</summary>
