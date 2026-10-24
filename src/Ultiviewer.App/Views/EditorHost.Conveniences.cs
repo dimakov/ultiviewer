@@ -246,6 +246,12 @@ public partial class EditorHost
 
     private void OnTextEntered(object sender, TextCompositionEventArgs e)
     {
+        if (e.Text == "#" && _current is { IsMarkdown: true } && _vm is not null)
+        {
+            CompleteHeading();
+            return;
+        }
+
         if (e.Text != "[" || _current is not { IsMarkdown: true } || _vm is null)
         {
             return;
@@ -272,6 +278,57 @@ public partial class EditorHost
         foreach (var page in pages)
         {
             _completion.CompletionList.CompletionData.Add(page);
+        }
+
+        _completion.Closed += (_, _) => _completion = null;
+        _completion.Show();
+    }
+
+    /// <summary>
+    /// After <c>[[Page#</c> (or <c>[[#</c> for this page), offers that page's headings, so links can point at a
+    /// section; following such a link jumps to the heading.
+    /// </summary>
+    private void CompleteHeading()
+    {
+        var document = Editor.Document;
+        var caret = Editor.CaretOffset;
+        var line = document.GetLineByOffset(caret);
+        var before = document.GetText(line.Offset, caret - line.Offset);
+        var open = before.LastIndexOf("[[", StringComparison.Ordinal);
+        if (open < 0 || before.IndexOf("]]", open, StringComparison.Ordinal) >= 0)
+        {
+            return;
+        }
+
+        var target = before[(open + 2)..^1];
+        if (target.Contains('#') || target.Contains('|'))
+        {
+            return;
+        }
+
+        var page = target.Length == 0
+            ? _current!.Path
+            : Core.Links.WikiLinkResolver.Resolve(target, _current!.Path, _vm!.AllPagePaths().ToList(), _current.Path is { } path ? _vm.NotebookOf(path)?.Path : null);
+        string? text = page is null ? null : _vm!.OpenTabs.FirstOrDefault(t => t.IsAt(page))?.Document.Text;
+        try
+        {
+            text ??= page is not null && File.Exists(page) ? Core.Files.TextDocumentFile.Load(page).Text : null;
+        }
+        catch (IOException)
+        {
+            return;
+        }
+
+        var headings = text is null ? [] : Core.Markdown.MarkdownOutline.Headings(text).Where(h => h.Text.Length > 0).ToList();
+        if (headings.Count == 0)
+        {
+            return;
+        }
+
+        _completion = new CompletionWindow(Editor.TextArea) { Width = 380, CloseWhenCaretAtBeginning = true };
+        foreach (var heading in headings)
+        {
+            _completion.CompletionList.CompletionData.Add(new WikiCompletion(heading.Text, new string('#', heading.Level) + " heading"));
         }
 
         _completion.Closed += (_, _) => _completion = null;

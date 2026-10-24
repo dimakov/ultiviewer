@@ -50,6 +50,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
 
         InitializeDocuments(startupFiles);
         InitializeOutline();
+        InitializeLinksPane();
     }
 
     /// <summary>Collects UI state into <see cref="Session"/> and writes settings and session to disk.</summary>
