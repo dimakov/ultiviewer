@@ -70,6 +70,11 @@
                     <TextBlock Style="{StaticResource Label}" Text="minutes (File → Page history)" />
                 </StackPanel>
 
+                <TextBlock Style="{StaticResource Section}" Text="Search" />
+                <CheckBox Content="Search text inside PDFs and pictures in notebooks" IsChecked="{Binding SearchAttachments}" />
+                <CheckBox Margin="20,6,0,0" Content="Recognize text in pictures and scanned PDFs (Windows OCR, in the background)"
+                          IsChecked="{Binding OcrImages}" IsEnabled="{Binding SearchAttachments}" />
+
                 <TextBlock Style="{StaticResource Section}" Text="Daily notes and quick notes" />
                 <Grid>
                     <Grid.ColumnDefinitions>

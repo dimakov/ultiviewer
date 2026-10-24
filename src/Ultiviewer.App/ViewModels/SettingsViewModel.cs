@@ -29,6 +29,8 @@ public sealed partial class SettingsViewModel : ObservableObject
         _autosaveExternalFiles = settings.AutosaveExternalFiles;
         _autosaveDelayMs = settings.AutosaveDelayMs;
         _keepHistory = settings.KeepHistory;
+        _searchAttachments = settings.SearchAttachments;
+        _ocrImages = settings.OcrImages;
         _historyIntervalMinutes = settings.HistoryIntervalMinutes;
         _defaultLineEnding = settings.DefaultLineEnding;
         _defaultUtf8Bom = settings.DefaultUtf8Bom;
@@ -117,6 +119,12 @@ public sealed partial class SettingsViewModel : ObservableObject
     private bool _keepHistory;
 
     [ObservableProperty]
+    private bool _searchAttachments;
+
+    [ObservableProperty]
+    private bool _ocrImages;
+
+    [ObservableProperty]
     private int _historyIntervalMinutes;
 
     [ObservableProperty]
@@ -174,6 +182,8 @@ public sealed partial class SettingsViewModel : ObservableObject
         settings.AutosaveExternalFiles = AutosaveExternalFiles;
         settings.AutosaveDelayMs = Math.Clamp(AutosaveDelayMs, 200, 60000);
         settings.KeepHistory = KeepHistory;
+        settings.SearchAttachments = SearchAttachments;
+        settings.OcrImages = OcrImages;
         settings.HistoryIntervalMinutes = Math.Clamp(HistoryIntervalMinutes, 1, 24 * 60);
         settings.DefaultLineEnding = DefaultLineEnding;
         settings.DefaultUtf8Bom = DefaultUtf8Bom;

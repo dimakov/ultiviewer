@@ -43,9 +43,10 @@ If an index can't be opened or queried, that notebook falls back to scanning all
 One SQLite file per notebook: `%LOCALAPPDATA%\Ultiviewer\Index\<first 16 hex of SHA-256(upper-case root path)>.db` (WAL mode). It is a cache: deleting it is always safe; a schema-version or root mismatch, or a corrupt file, rebuilds it.
 
 ```sql
-Meta(key, value)                                   -- schema = 1, root = <notebook path>
-Pages(id, path UNIQUE NOCASE, title, title_folded, mtime, size, hash)   -- path relative, '/' separators
-Blocks(id, page_id, line, text)                    -- text is FOLDED (TextFolding), one row per block
+Meta(key, value)                                   -- schema = 2, root = <notebook path>
+Pages(id, path UNIQUE NOCASE, title, title_folded, mtime, size, hash, kind)   -- path relative, '/' separators; kind 1 = attachment
+Blocks(id, page_id, line, text)                    -- text is FOLDED (TextFolding), one row per block (per page for attachments)
+AttachmentPages(page_id, page, text)               -- original text of attachment pages (see attachment-search.md)
 Tags(page_id, line, tag)                           -- lower case, without '#'
 Tasks(page_id, line, done, text)
 BlocksTri / TitlesTri    fts5 trigram, external content   -- terms >= 3 chars: substring match

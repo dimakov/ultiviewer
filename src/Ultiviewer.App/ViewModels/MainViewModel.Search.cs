@@ -63,7 +63,7 @@ public sealed partial class MainViewModel
             RecentSearches.Add(recent);
         }
 
-        _search = new SearchService(AppPaths.IndexDirectory);
+        _search = new SearchService(AppPaths.IndexDirectory) { IncludeAttachments = Settings.SearchAttachments };
         _search.FellBackToScan += (root, ex) => ErrorLog.Write(ex, $"Search index unavailable for {root}; scanned files instead");
         _searchDebounce = new DispatcherTimer(TimeSpan.FromMilliseconds(250), DispatcherPriority.Background, (_, _) =>
         {
@@ -87,7 +87,11 @@ public sealed partial class MainViewModel
         {
             search.SetNotebooks(roots);
             search.UpdateAll();
-            _dispatcher.BeginInvoke(() => IndexUpdated?.Invoke());
+            _dispatcher.BeginInvoke(() =>
+            {
+                IndexUpdated?.Invoke();
+                RequestAttachmentIndexing();
+            });
         });
     }
 
@@ -111,6 +115,11 @@ public sealed partial class MainViewModel
         if (_search is not { } search)
         {
             return;
+        }
+
+        if (AttachmentFiles.IsAttachment(path) || Directory.Exists(path))
+        {
+            RequestAttachmentIndexing();
         }
 
         _ = Task.Run(() =>
@@ -373,14 +382,37 @@ public sealed partial class MainViewModel
     /// <summary>Opens a result line and selects its first match.</summary>
     public void OpenSearchLine(SearchLineViewModel line, bool focusEditor)
     {
+        if (line.IsAttachment)
+        {
+            OpenAttachment(line.Path, line.Line);
+            return;
+        }
+
         if (OpenDocument(line.Path, preview: false, line: line.Line, focus: focusEditor) is not null)
         {
             _dispatcher.BeginInvoke(() => SelectRangeRequested?.Invoke(line.Line, line.FirstColumn, line.FirstLength), DispatcherPriority.Loaded);
         }
     }
 
-    public void OpenSearchPage(SearchPageViewModel page) =>
+    public void OpenSearchPage(SearchPageViewModel page)
+    {
+        if (page.IsAttachment)
+        {
+            OpenAttachment(page.Path, page.Lines.FirstOrDefault()?.Line);
+            return;
+        }
+
         OpenDocument(page.Path, preview: false, line: page.Lines.FirstOrDefault()?.Line);
+    }
+
+    /// <summary>PDFs and pictures open in their default app (the match was on page <paramref name="page"/>).</summary>
+    private void OpenAttachment(string path, int? page)
+    {
+        ShellService.Open(path);
+        StatusMessage = page is { } number && Path.GetExtension(path).Equals(".pdf", StringComparison.OrdinalIgnoreCase)
+            ? $"Opened {Path.GetFileName(path)}; the match is on page {number}"
+            : $"Opened {Path.GetFileName(path)}";
+    }
 
     // ---- Recent pages and the Ctrl+E switcher ----
 

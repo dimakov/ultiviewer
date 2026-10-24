@@ -79,6 +79,12 @@ public sealed class AppSettings
 
     public string TimeFormat { get; set; } = "HH:mm";
 
+    /// <summary>Search also finds text inside PDFs and pictures in notebooks.</summary>
+    public bool SearchAttachments { get; set; } = true;
+
+    /// <summary>Recognize text in pictures and scanned PDF pages (Windows OCR) for search.</summary>
+    public bool OcrImages { get; set; } = true;
+
     /// <summary>Notebook folder for daily notes and the Inbox; empty uses the first notebook.</summary>
     public string? DailyNotesNotebook { get; set; }
 

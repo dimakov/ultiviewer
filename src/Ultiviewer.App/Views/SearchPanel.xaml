@@ -54,7 +54,7 @@
             <TreeView.Resources>
                 <HierarchicalDataTemplate DataType="{x:Type vm:SearchPageViewModel}" ItemsSource="{Binding Lines}">
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Margin="0,0,6,0" VerticalAlignment="Center" FontFamily="{StaticResource IconFont}" FontSize="13" Text="&#xE8A5;" Opacity="0.75" />
+                        <TextBlock Margin="0,0,6,0" VerticalAlignment="Center" FontFamily="{StaticResource IconFont}" FontSize="13" Text="{Binding Glyph}" Opacity="0.75" />
                         <TextBlock VerticalAlignment="Center" FontWeight="SemiBold" Text="{Binding Title}" />
                         <TextBlock Margin="10,0,0,0" VerticalAlignment="Center" Opacity="0.6" Text="{Binding Location}" />
                         <TextBlock Margin="10,0,0,0" VerticalAlignment="Center" Opacity="0.6" Text="{Binding MatchCount, StringFormat=({0})}" />
@@ -63,7 +63,7 @@
                 <DataTemplate DataType="{x:Type vm:SearchLineViewModel}">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Width="44" Margin="0,0,10,0" TextAlignment="Right" Opacity="0.55" FontFamily="Cascadia Mono, Consolas"
-                                   Text="{Binding Line}" />
+                                   Text="{Binding LineLabel}" />
                         <views:HighlightedText FontFamily="Cascadia Mono, Consolas" Segments="{Binding Segments}" />
                     </StackPanel>
                 </DataTemplate>

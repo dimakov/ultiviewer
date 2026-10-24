@@ -23,7 +23,7 @@ exit /b 0
 
 :run
 dotnet build src\Ultiviewer.App\Ultiviewer.App.csproj -c Debug -v minimal -nologo || exit /b 1
-start "" "src\Ultiviewer.App\bin\Debug\net10.0-windows\win-x64\Ultiviewer.exe" %2 %3 %4
+start "" "src\Ultiviewer.App\bin\Debug\net10.0-windows10.0.19041.0\win-x64\Ultiviewer.exe" %2 %3 %4
 exit /b 0
 
 :publish

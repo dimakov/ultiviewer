@@ -13,10 +13,11 @@ public sealed class SearchLineViewModel
     private const int ContextBefore = 50;
     private const int MaxLength = 220;
 
-    public SearchLineViewModel(string path, int line, string text, IReadOnlyList<(int Column, int Length)> matches)
+    public SearchLineViewModel(string path, int line, string text, IReadOnlyList<(int Column, int Length)> matches, bool isAttachment = false)
     {
         Path = path;
         Line = line;
+        IsAttachment = isAttachment;
         FirstColumn = matches.Count > 0 ? matches[0].Column : 0;
         FirstLength = matches.Count > 0 ? matches[0].Length : 0;
         Segments = BuildSegments(text, matches);
@@ -26,6 +27,11 @@ public sealed class SearchLineViewModel
 
     public int Line { get; }
 
+    /// <summary>A PDF or image hit: <see cref="Line"/> is its page.</summary>
+    public bool IsAttachment { get; }
+
+    public string LineLabel => IsAttachment ? $"p. {Line}" : Line.ToString(System.Globalization.CultureInfo.CurrentCulture);
+
     public int FirstColumn { get; }
 
     public int FirstLength { get; }
@@ -33,7 +39,7 @@ public sealed class SearchLineViewModel
     public IReadOnlyList<TextSegment> Segments { get; }
 
     /// <summary>Accessible name (screen readers, UI Automation).</summary>
-    public override string ToString() => $"Line {Line}: {string.Concat(Segments.Select(s => s.Text))}";
+    public override string ToString() => $"{(IsAttachment ? "Page" : "Line")} {Line}: {string.Concat(Segments.Select(s => s.Text))}";
 
     private static IReadOnlyList<TextSegment> BuildSegments(string text, IReadOnlyList<(int Column, int Length)> matches)
     {
@@ -92,9 +98,10 @@ public sealed partial class SearchPageViewModel : ObservableObject
         Title = result.Title;
         Location = location;
         TitleMatched = result.TitleMatched;
+        IsAttachment = result.IsAttachment;
         Lines = result.Hits
             .GroupBy(h => h.Line)
-            .Select(g => new SearchLineViewModel(result.Path, g.Key, g.First().LineText, g.Select(h => (h.Column, h.Length)).ToList()))
+            .Select(g => new SearchLineViewModel(result.Path, g.Key, g.First().LineText, g.Select(h => (h.Column, h.Length)).ToList(), result.IsAttachment))
             .ToList();
         MatchCount = Math.Max(result.Hits.Count, TitleMatched ? 1 : 0);
     }
@@ -106,6 +113,12 @@ public sealed partial class SearchPageViewModel : ObservableObject
     public string Location { get; }
 
     public bool TitleMatched { get; }
+
+    /// <summary>A PDF or image (its text was extracted); opening it uses its default app.</summary>
+    public bool IsAttachment { get; }
+
+    /// <summary>Segoe icon: a page, or a paper clip for attachments.</summary>
+    public string Glyph => IsAttachment ? "\uE723" : "\uE8A5";
 
     public int MatchCount { get; }
 

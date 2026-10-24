@@ -65,6 +65,7 @@ public sealed partial class MainViewModel : ObservableObject, IDisposable
     {
         DisposeWatchers();
         _searchCancellation?.Cancel();
+        StopAttachmentIndexing();
         _search?.Dispose();
     }
 

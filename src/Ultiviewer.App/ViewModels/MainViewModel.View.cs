@@ -118,5 +118,10 @@ public sealed partial class MainViewModel
 
         EditorSettingsChanged?.Invoke();
         CaptureSettingsChanged?.Invoke();
+        if (_search is { } search)
+        {
+            search.IncludeAttachments = Settings.SearchAttachments;
+            RequestAttachmentIndexing();
+        }
     }
 }
