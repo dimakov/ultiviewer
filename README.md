@@ -14,6 +14,7 @@ Notes are ordinary `.md` files in ordinary folders, so Explorer, git, OneDrive a
 - **Preview**: Live / Edit / Split / Preview per tab (Ctrl+Shift+V) with scroll sync, tables, task lists, math, Mermaid diagrams, highlighted code, `[[wiki links]]` and `#tags`; offline and locked down (no scripts from notes).
 - **Search** (Ctrl+Shift+F): indexed, live, accent- and case-insensitive, substring matching (works for Hebrew prefixes and code identifiers), `"phrases"`, `OR`, `-exclude`, `#tag`, `is:todo`; replace across the listed pages. **Go to page** (Ctrl+E).
 - **Basic Text formatting** (like OneNote's Home tab): toolbar, Format menu and shortcuts for headings, bold/italic/underline/strikethrough, sub/superscript, highlight, font color, lists, quotes, links, tables and code, all written as Markdown.
+- **Spreadsheet-like tables**: Tab / Shift+Tab / Enter move between cells and keep columns aligned; insert, delete, move, align and sort rows and columns; paste cells from Excel as a table.
 - **Notepad++ tools**: find/replace bar with regex, go to line, duplicate/move/delete/join/sort lines, case conversion, bookmarks, column selection, smart highlighting.
 - **OneNote conveniences**: paste screenshots, drop files as attachments, Ctrl+1 to-dos and a To-do pane across notebooks, Tags pane, templates, favorites and recent pages, list continuation, `[[` completion, links that follow renames and moves.
 

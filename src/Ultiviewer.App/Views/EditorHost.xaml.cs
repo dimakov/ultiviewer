@@ -46,6 +46,7 @@ public partial class EditorHost : UserControl
         InitializeConveniences();
         InitializeFormatting();
         InitializeLive();
+        InitializeTables();
         SplitterMoved += SavePreviewRatio;
     }
 

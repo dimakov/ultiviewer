@@ -65,7 +65,8 @@ public partial class EditorHost
         {
             if (Clipboard.ContainsText())
             {
-                return; // ordinary text paste
+                e.Handled = PasteTable(Clipboard.GetText()); // otherwise an ordinary text paste
+                return;
             }
 
             if (Clipboard.ContainsFileDropList())
@@ -203,6 +204,12 @@ public partial class EditorHost
 
     private void OnTextAreaPreviewKeyDown(object sender, KeyEventArgs e)
     {
+        if (e.Key is Key.Tab or Key.Enter && _completion is null && _current is { IsMarkdown: true } && HandleTableKey(e))
+        {
+            e.Handled = true;
+            return;
+        }
+
         if (e.Key == Key.Tab && _completion is null && _current is { IsMarkdown: true } && HandleListIndent(e))
         {
             e.Handled = true;

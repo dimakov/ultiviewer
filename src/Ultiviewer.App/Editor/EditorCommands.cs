@@ -64,12 +64,37 @@ public static class EditorCommands
     public static RoutedUICommand InsertTable { get; } = Create("Table", nameof(InsertTable));
     public static RoutedUICommand HorizontalRule { get; } = Create("Horizontal line", nameof(HorizontalRule));
 
+    // Spreadsheet-like table editing (Tab, Shift+Tab and Enter move between cells; see EditorHost.Tables).
+    public static RoutedUICommand TableInsertRowAbove { get; } = Create("Insert row above", nameof(TableInsertRowAbove));
+    public static RoutedUICommand TableInsertRowBelow { get; } = Create("Insert row below", nameof(TableInsertRowBelow));
+    public static RoutedUICommand TableDeleteRow { get; } = Create("Delete row", nameof(TableDeleteRow));
+    public static RoutedUICommand TableMoveRowUp { get; } = Create("Move row up", nameof(TableMoveRowUp));
+    public static RoutedUICommand TableMoveRowDown { get; } = Create("Move row down", nameof(TableMoveRowDown));
+    public static RoutedUICommand TableInsertColumnLeft { get; } = Create("Insert column left", nameof(TableInsertColumnLeft));
+    public static RoutedUICommand TableInsertColumnRight { get; } = Create("Insert column right", nameof(TableInsertColumnRight));
+    public static RoutedUICommand TableDeleteColumn { get; } = Create("Delete column", nameof(TableDeleteColumn));
+    public static RoutedUICommand TableMoveColumnLeft { get; } = Create("Move column left", nameof(TableMoveColumnLeft));
+    public static RoutedUICommand TableMoveColumnRight { get; } = Create("Move column right", nameof(TableMoveColumnRight));
+    public static RoutedUICommand TableAlignLeft { get; } = Create("Align column left", nameof(TableAlignLeft));
+    public static RoutedUICommand TableAlignCenter { get; } = Create("Center column", nameof(TableAlignCenter));
+    public static RoutedUICommand TableAlignRight { get; } = Create("Align column right", nameof(TableAlignRight));
+    public static RoutedUICommand TableAlignNone { get; } = Create("Default column alignment", nameof(TableAlignNone));
+    public static RoutedUICommand TableSortAscending { get; } = Create("Sort rows A → Z by this column", nameof(TableSortAscending));
+    public static RoutedUICommand TableSortDescending { get; } = Create("Sort rows Z → A by this column", nameof(TableSortDescending));
+    public static RoutedUICommand TableFormat { get; } = Create("Tidy table (align columns)", nameof(TableFormat));
+
+    /// <summary>Pastes clipboard text as is (no table conversion).</summary>
+    public static RoutedUICommand PasteAsText { get; } = Create("Paste as plain text", nameof(PasteAsText), Key.V, ModifierKeys.Control | ModifierKeys.Alt);
+
     /// <summary>Commands that only apply to Markdown documents; their shortcuts win there (Ctrl+U underlines in notes, lowercases elsewhere).</summary>
     public static IReadOnlySet<RoutedUICommand> MarkdownOnly { get; } = new HashSet<RoutedUICommand>
     {
         Bold, Italic, Underline, Strikethrough, Subscript, Superscript, Highlight, InlineCode, ClearFormatting,
         NormalText, Heading1, Heading2, Heading3, Heading4, Heading5, Heading6, Quote, CodeBlock,
         BulletList, NumberedList, InsertLink, InsertTable, HorizontalRule,
+        TableInsertRowAbove, TableInsertRowBelow, TableDeleteRow, TableMoveRowUp, TableMoveRowDown,
+        TableInsertColumnLeft, TableInsertColumnRight, TableDeleteColumn, TableMoveColumnLeft, TableMoveColumnRight,
+        TableAlignLeft, TableAlignCenter, TableAlignRight, TableAlignNone, TableSortAscending, TableSortDescending, TableFormat,
     };
 
     /// <summary>All commands that carry a keyboard shortcut, for binding and conflict removal.</summary>

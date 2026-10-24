@@ -59,6 +59,7 @@
                 <MenuItem Command="ApplicationCommands.Cut" />
                 <MenuItem Command="ApplicationCommands.Copy" />
                 <MenuItem Command="ApplicationCommands.Paste" />
+                <MenuItem Command="editor:EditorCommands.PasteAsText" />
                 <MenuItem Command="ApplicationCommands.SelectAll" />
                 <Separator />
                 <MenuItem Command="editor:EditorCommands.Find" />
@@ -119,6 +120,28 @@
                 <Separator />
                 <MenuItem Command="editor:EditorCommands.InsertLink" />
                 <MenuItem Command="editor:EditorCommands.InsertTable" />
+                <MenuItem Header="T_able editing">
+                    <MenuItem Command="editor:EditorCommands.TableInsertRowAbove" />
+                    <MenuItem Command="editor:EditorCommands.TableInsertRowBelow" />
+                    <MenuItem Command="editor:EditorCommands.TableDeleteRow" />
+                    <MenuItem Command="editor:EditorCommands.TableMoveRowUp" />
+                    <MenuItem Command="editor:EditorCommands.TableMoveRowDown" />
+                    <Separator />
+                    <MenuItem Command="editor:EditorCommands.TableInsertColumnLeft" />
+                    <MenuItem Command="editor:EditorCommands.TableInsertColumnRight" />
+                    <MenuItem Command="editor:EditorCommands.TableDeleteColumn" />
+                    <MenuItem Command="editor:EditorCommands.TableMoveColumnLeft" />
+                    <MenuItem Command="editor:EditorCommands.TableMoveColumnRight" />
+                    <Separator />
+                    <MenuItem Command="editor:EditorCommands.TableAlignLeft" />
+                    <MenuItem Command="editor:EditorCommands.TableAlignCenter" />
+                    <MenuItem Command="editor:EditorCommands.TableAlignRight" />
+                    <MenuItem Command="editor:EditorCommands.TableAlignNone" />
+                    <Separator />
+                    <MenuItem Command="editor:EditorCommands.TableSortAscending" />
+                    <MenuItem Command="editor:EditorCommands.TableSortDescending" />
+                    <MenuItem Command="editor:EditorCommands.TableFormat" />
+                </MenuItem>
                 <MenuItem Command="editor:EditorCommands.HorizontalRule" />
             </MenuItem>
             <MenuItem Header="_Insert">
