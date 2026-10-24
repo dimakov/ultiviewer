@@ -37,6 +37,7 @@ public static class KeyboardShortcuts
         yield return ("CycleViewMode", "Cycle Live / Edit / Split / Preview", "Ctrl+Shift+V", vm => vm.CycleViewModeCommand);
         yield return ("GoToPage", "Go to page", "Ctrl+E", vm => vm.QuickOpenCommand);
         yield return ("PageHistory", "Page history", "Ctrl+Shift+H", vm => vm.ShowHistoryCommand);
+        yield return ("TodaysNote", "Today's daily note", "Ctrl+Shift+D", vm => vm.OpenTodayCommand);
         yield return ("Settings", "Settings", "Ctrl+OemComma", vm => vm.OpenSettingsCommand);
     }
 

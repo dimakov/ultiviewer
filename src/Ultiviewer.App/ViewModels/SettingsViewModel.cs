@@ -9,8 +9,14 @@ namespace Ultiviewer.App.ViewModels;
 /// <summary>Editable copy of <see cref="AppSettings"/> for the settings window; applied only on Save.</summary>
 public sealed partial class SettingsViewModel : ObservableObject
 {
-    public SettingsViewModel(AppSettings settings)
+    public SettingsViewModel(AppSettings settings, IEnumerable<(string Path, string Name)>? notebooks = null)
     {
+        Notebooks = [new("", "First notebook"), .. (notebooks ?? []).Select(n => new KeyValuePair<string, string>(n.Path, n.Name))];
+        _dailyNotesNotebook = settings.DailyNotesNotebook ?? "";
+        _dailyNotesFolder = settings.DailyNotesFolder;
+        _dailyNoteFormat = settings.DailyNoteFormat;
+        _quickCaptureHotkey = settings.QuickCaptureHotkey;
+        _keepRunningInTray = settings.KeepRunningInTray;
         _theme = settings.Theme;
         _editorFontFamily = settings.EditorFontFamily;
         _editorFontSize = settings.EditorFontSize;
@@ -49,6 +55,30 @@ public sealed partial class SettingsViewModel : ObservableObject
     public IReadOnlyList<string> Fonts { get; } = Fonts_();
 
     public IReadOnlyList<ShortcutEntry> Shortcuts { get; }
+
+    /// <summary>Notebooks for daily notes: path → name ("" = the first notebook).</summary>
+    public IReadOnlyList<KeyValuePair<string, string>> Notebooks { get; }
+
+    [ObservableProperty]
+    private string _dailyNotesNotebook;
+
+    [ObservableProperty]
+    private string _dailyNotesFolder;
+
+    [ObservableProperty]
+    private string _dailyNoteFormat;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HotkeyProblem))]
+    private string _quickCaptureHotkey;
+
+    [ObservableProperty]
+    private bool _keepRunningInTray;
+
+    /// <summary>Why the quick-note shortcut can't be used, or empty.</summary>
+    public string HotkeyProblem => QuickCaptureHotkey.Trim().Length == 0 || GlobalHotkey.TryParse(QuickCaptureHotkey, out _, out _)
+        ? ""
+        : "Use modifiers and a key, for example Win+Alt+N or Ctrl+Shift+Space.";
 
     [ObservableProperty]
     private ThemePreference _theme;
@@ -150,6 +180,11 @@ public sealed partial class SettingsViewModel : ObservableObject
         settings.DefaultMarkdownViewMode = DefaultMarkdownViewMode;
         settings.LiveFontFamily = string.IsNullOrWhiteSpace(LiveFontFamily) ? "Segoe UI" : LiveFontFamily;
         settings.LiveMaxWidth = LiveMaxWidth <= 0 ? 0 : Math.Clamp(LiveMaxWidth, 300, 4000);
+        settings.DailyNotesNotebook = string.IsNullOrWhiteSpace(DailyNotesNotebook) ? null : DailyNotesNotebook;
+        settings.DailyNotesFolder = DailyNotesFolder.Trim();
+        settings.DailyNoteFormat = string.IsNullOrWhiteSpace(DailyNoteFormat) ? "yyyy-MM-dd" : DailyNoteFormat.Trim();
+        settings.QuickCaptureHotkey = HotkeyProblem.Length == 0 ? QuickCaptureHotkey.Trim() : settings.QuickCaptureHotkey;
+        settings.KeepRunningInTray = KeepRunningInTray;
         settings.DateFormat = DatePreview == "Invalid format" ? "yyyy-MM-dd" : DateFormat;
         settings.TimeFormat = DatePreview == "Invalid format" ? "HH:mm" : TimeFormat;
     }

@@ -70,6 +70,39 @@
                     <TextBlock Style="{StaticResource Label}" Text="minutes (File → Page history)" />
                 </StackPanel>
 
+                <TextBlock Style="{StaticResource Section}" Text="Daily notes and quick notes" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="180" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <TextBlock Style="{StaticResource Label}" Text="Notebook" />
+                    <ComboBox Grid.Column="1" ItemsSource="{Binding Notebooks}" DisplayMemberPath="Value" SelectedValuePath="Key"
+                              SelectedValue="{Binding DailyNotesNotebook}" AutomationProperties.Name="Notebook for daily notes" />
+                    <TextBlock Grid.Row="1" Margin="0,8,12,0" Style="{StaticResource Label}" Text="Daily notes section" />
+                    <TextBox Grid.Row="1" Grid.Column="1" Width="160" Margin="0,8,0,0" HorizontalAlignment="Left"
+                             Text="{Binding DailyNotesFolder, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Daily notes section" />
+                    <TextBlock Grid.Row="2" Margin="0,8,12,0" Style="{StaticResource Label}" Text="Daily note name" />
+                    <StackPanel Grid.Row="2" Grid.Column="1" Margin="0,8,0,0" Orientation="Horizontal">
+                        <TextBox Width="160" Text="{Binding DailyNoteFormat, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Daily note name format" />
+                        <TextBlock Margin="8,0,0,0" VerticalAlignment="Center" Opacity="0.7" Text="date format; _templates/Daily.md is used for new days" />
+                    </StackPanel>
+                    <TextBlock Grid.Row="3" Margin="0,8,12,0" Style="{StaticResource Label}" Text="Quick note shortcut" />
+                    <StackPanel Grid.Row="3" Grid.Column="1" Margin="0,8,0,0" Orientation="Horizontal">
+                        <TextBox Width="160" Text="{Binding QuickCaptureHotkey, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Quick note shortcut" />
+                        <TextBlock Margin="8,0,0,0" VerticalAlignment="Center" Opacity="0.7" Text="works in every app; empty turns it off" />
+                    </StackPanel>
+                </Grid>
+                <TextBlock Margin="180,4,0,0" Foreground="#D64545" Text="{Binding HotkeyProblem}" />
+                <CheckBox Margin="0,6,0,0" Content="Keep running in the notification area when the window is closed (for the quick note shortcut)"
+                          IsChecked="{Binding KeepRunningInTray}" />
+
                 <TextBlock Style="{StaticResource Section}" Text="New pages and files" />
                 <Grid>
                     <Grid.ColumnDefinitions>

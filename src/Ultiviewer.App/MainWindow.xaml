@@ -35,6 +35,9 @@
                 <MenuItem Header="_Import notebook from zip…" Command="{Binding ImportZipCommand}" />
                 <MenuItem Header="_Export notebook as zip…" Command="{Binding ExportZipCommand}" />
                 <Separator />
+                <MenuItem Header="To_day's note" Command="{Binding OpenTodayCommand}" InputGestureText="Ctrl+Shift+D" />
+                <MenuItem Header="_Quick note…" Command="{Binding ShowQuickNoteCommand}" />
+                <Separator />
                 <MenuItem Header="New _file" Command="{Binding NewFileCommand}" InputGestureText="Ctrl+T" />
                 <MenuItem Header="_Open file…" Command="{Binding OpenFileCommand}" InputGestureText="Ctrl+O" />
                 <MenuItem Header="Reopen closed _tab" Command="{Binding ReopenClosedCommand}" InputGestureText="Ctrl+Shift+T" />

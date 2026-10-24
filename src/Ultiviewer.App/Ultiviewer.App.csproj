@@ -4,6 +4,8 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
+    <!-- Only for the notification-area icon (NotifyIcon); WPF types stay unambiguous without its global usings. -->
+    <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>Ultiviewer</AssemblyName>
     <RootNamespace>Ultiviewer.App</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
@@ -11,8 +13,8 @@
     <!-- Self-contained so the exe runs without a machine-wide .NET 10 runtime. -->
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
-    <!-- WPF Fluent ThemeMode is marked experimental. -->
-    <NoWarn>$(NoWarn);WPF0001</NoWarn>
+    <!-- WPF0001: Fluent ThemeMode is experimental. WFO0003: WinForms (tray icon only) prefers its own DPI API; WPF uses the manifest. -->
+    <NoWarn>$(NoWarn);WPF0001;WFO0003</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -34,6 +36,11 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Ultiviewer.Snapshot" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
   </ItemGroup>
 
 </Project>

@@ -117,5 +117,6 @@ public sealed partial class MainViewModel
         }
 
         EditorSettingsChanged?.Invoke();
+        CaptureSettingsChanged?.Invoke();
     }
 }

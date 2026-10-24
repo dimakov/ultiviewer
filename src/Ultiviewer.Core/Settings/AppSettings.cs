@@ -79,6 +79,23 @@ public sealed class AppSettings
 
     public string TimeFormat { get; set; } = "HH:mm";
 
+    /// <summary>Notebook folder for daily notes and the Inbox; empty uses the first notebook.</summary>
+    public string? DailyNotesNotebook { get; set; }
+
+    /// <summary>Section (folder) inside that notebook for daily notes; empty puts them at the notebook root.</summary>
+    public string DailyNotesFolder { get; set; } = "Daily";
+
+    /// <summary>Daily note file name, as a .NET date format.</summary>
+    public string DailyNoteFormat { get; set; } = "yyyy-MM-dd";
+
+    /// <summary>Windows-wide shortcut for the quick-note window (for example "Win+Alt+N"); empty turns it off.</summary>
+    public string QuickCaptureHotkey { get; set; } = "Win+Alt+N";
+
+    public Capture.CaptureTarget QuickCaptureTarget { get; set; } = Capture.CaptureTarget.DailyNote;
+
+    /// <summary>Closing the window keeps Ultiviewer in the notification area, so the quick-note shortcut keeps working.</summary>
+    public bool KeepRunningInTray { get; set; }
+
     /// <summary>Command name → key gesture text (for example "Ctrl+Alt+N"), overriding the defaults.</summary>
     public Dictionary<string, string> Shortcuts { get; set; } = [];
 

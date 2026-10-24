@@ -34,6 +34,30 @@ public partial class MainWindow : Window
         Services.KeyboardShortcuts.BindApplicationCommands(this, vm, vm.Settings.Shortcuts);
         _vm.SettingsRequested += ShowSettings;
         _vm.HistoryRequested += ShowHistory;
+        _vm.QuickCaptureRequested += ShowQuickCapture;
+    }
+
+    /// <summary>Shows the window again (from the tray, a second launch or the quick-note window) and brings it forward.</summary>
+    public void ShowFromTray()
+    {
+        Show();
+        if (WindowState == WindowState.Minimized)
+        {
+            WindowState = WindowState.Normal;
+        }
+
+        Activate();
+    }
+
+    private void ShowQuickCapture()
+    {
+        if (Application.Current.Windows.OfType<Views.QuickCaptureWindow>().FirstOrDefault() is { } open)
+        {
+            open.Activate();
+            return;
+        }
+
+        new Views.QuickCaptureWindow(_vm).Show();
     }
 
     /// <summary>One history window per tab; asking again brings it forward.</summary>
@@ -54,12 +78,7 @@ public partial class MainWindow : Window
     /// <summary>Brings the window forward and opens files handed over by a second launch.</summary>
     public void OpenFromAnotherLaunch(IEnumerable<string> files)
     {
-        if (WindowState == WindowState.Minimized)
-        {
-            WindowState = WindowState.Normal;
-        }
-
-        Activate();
+        ShowFromTray();
         foreach (var file in files)
         {
             _vm.OpenDocument(file, preview: false);
@@ -68,7 +87,7 @@ public partial class MainWindow : Window
 
     private void ShowSettings()
     {
-        var settings = new SettingsViewModel(_vm.Settings);
+        var settings = new SettingsViewModel(_vm.Settings, _vm.Notebooks.Select(n => (n.Path, n.Name)));
         if (new Views.SettingsWindow(settings) { Owner = this }.ShowDialog() == true)
         {
             settings.ApplyTo(_vm.Settings);
@@ -168,6 +187,11 @@ public partial class MainWindow : Window
         }
 
         _vm.SaveState();
+        if (_vm.Settings.KeepRunningInTray && !_vm.ExitRequested)
+        {
+            e.Cancel = true; // keep running in the notification area, so the quick-note shortcut works
+            Hide();
+        }
     }
 
     private void RestorePlacement()
@@ -211,7 +235,11 @@ public partial class MainWindow : Window
         _vm.Session.TreeWidth = TreeColumn.ActualWidth;
     }
 
-    private void OnExit(object sender, RoutedEventArgs e) => Close();
+    private void OnExit(object sender, RoutedEventArgs e)
+    {
+        _vm.ExitRequested = true;
+        Close();
+    }
 
     private void OnWindowDrop(object sender, DragEventArgs e)
     {
