@@ -65,13 +65,12 @@ internal static class Program
         vm.Initialize(script.File is null ? [] : [script.File]);
         Pump(1000);
 
-        var editor = window.EditorView.TextEditor;
         try
         {
             foreach (var step in script.Steps)
             {
                 dialogs.ConfirmAnswer = step.Confirm ?? dialogs.ConfirmAnswer;
-                Run(step, vm, window, editor);
+                Run(step, vm, window);
             }
         }
         catch (Exception ex)
@@ -84,13 +83,37 @@ internal static class Program
         return 0;
     }
 
-    private static void Run(Step step, MainViewModel vm, MainWindow window, TextEditor editor)
+    private static void Run(Step step, MainViewModel vm, MainWindow window)
     {
+        if (step.Split is { } split)
+        {
+            (split switch
+            {
+                "right" => vm.SplitRightCommand,
+                "down" => vm.SplitDownCommand,
+                _ => vm.UnsplitCommand,
+            }).Execute(null);
+            Pump(400);
+        }
+
+        if (step.FocusGroup is { } focus)
+        {
+            vm.FocusedGroup = focus == 0 ? vm.Primary : vm.Secondary;
+        }
+
         if (step.Open is { } open)
         {
             vm.OpenDocument(open, preview: false);
             Pump(500);
         }
+
+        if (step.MoveToOther)
+        {
+            vm.MoveToOtherGroupCommand.Execute(null);
+            Pump(300);
+        }
+
+        var editor = window.ActiveEditorHost.TextEditor;
 
         if (step.Theme is { } theme)
         {
@@ -206,12 +229,29 @@ internal static class Program
             Console.WriteLine($"dumped {dump}");
         }
 
+        if (step.SaveState)
+        {
+            try
+            {
+                vm.SaveState();
+                Console.WriteLine("session saved");
+            }
+            catch (ArgumentException ex)
+            {
+                Console.WriteLine("save failed: " + ex.Message);
+                Console.WriteLine(JsonSerializer.Serialize(vm.Session, new JsonSerializerOptions { NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowNamedFloatingPointLiterals }));
+            }
+        }
+
         if (step.Print is { } expression)
         {
             Console.WriteLine(expression switch
             {
                 "caret" => $"caret {editor.CaretOffset} line {editor.TextArea.Caret.Line} col {editor.TextArea.Caret.Column}",
                 "margin" => $"textview margin {editor.TextArea.TextView.Margin}",
+                "groups" => $"split={vm.IsSplit} vertical={vm.SplitVertical} focused={vm.FocusedGroup.Index} "
+                    + $"first=[{string.Join(", ", vm.Primary.Tabs.Select(t => (t == vm.Primary.ActiveTab ? "*" : "") + t.Title + ":" + vm.Primary.ModeOf(t)))}] "
+                    + $"second=[{string.Join(", ", vm.Secondary.Tabs.Select(t => (t == vm.Secondary.ActiveTab ? "*" : "") + t.Title + ":" + vm.Secondary.ModeOf(t)))}] active={vm.ActiveTab?.Title}",
                 _ => $"unknown print '{expression}'",
             });
         }
@@ -380,6 +420,14 @@ internal sealed class Script
 /// <summary>One step; every property is optional and they run in the order listed here.</summary>
 internal sealed class Step
 {
+    /// <summary>"right" or "down" opens a second editor, "none" goes back to one.</summary>
+    public string? Split { get; set; }
+
+    /// <summary>0 or 1: which editor the next steps act on.</summary>
+    public int? FocusGroup { get; set; }
+
+    public bool MoveToOther { get; set; }
+
     public string? Open { get; set; }
 
     public string? Theme { get; set; }
@@ -435,6 +483,9 @@ internal sealed class Step
     public string? Dump { get; set; }
 
     public string? Print { get; set; }
+
+    /// <summary>Writes settings and the session (open tabs, split) as closing the window would.</summary>
+    public bool SaveState { get; set; }
 }
 
 /// <summary>Opens the active tab's history window.</summary>
