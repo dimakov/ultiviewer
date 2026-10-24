@@ -218,6 +218,12 @@ internal static class Program
             }
         }
 
+        if (step.MarksAtCaret is { } marksAtCaret)
+        {
+            vm.ShowMarksAtCaret = marksAtCaret;
+            Pump(300);
+        }
+
         if (step.Direction is { } direction)
         {
             vm.SetDirection(vm.ActiveTab, direction switch
@@ -736,6 +742,9 @@ internal sealed class Step
 
     /// <summary>Renders the quick-note window (off-screen, not activated) to this PNG.</summary>
     public string? CaptureWindow { get; set; }
+
+    /// <summary>Live view shows Markdown marks at the caret (true) or keeps them hidden (false).</summary>
+    public bool? MarksAtCaret { get; set; }
 
     /// <summary>Sets the active document's text direction: "rtl", "ltr" or "auto".</summary>
     public string? Direction { get; set; }
