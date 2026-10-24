@@ -196,6 +196,16 @@ internal static class Program
             Pump(300);
         }
 
+        if (step.LinkMentions)
+        {
+            foreach (var mention in vm.UnlinkedMentions.ToList())
+            {
+                vm.LinkMention(mention);
+            }
+
+            Pump(1500);
+        }
+
         if (step.Search is { } query)
         {
             vm.IsSearchPanelOpen = true;
@@ -315,6 +325,9 @@ internal static class Program
             {
                 "caret" => $"caret {editor.CaretOffset} line {editor.TextArea.Caret.Line} col {editor.TextArea.Caret.Column}",
                 "margin" => $"textview margin {editor.TextArea.TextView.Margin}",
+                "links" => "  linked from: " + string.Join(" | ", vm.Backlinks.Select(l => $"{l.Title}:{l.Line} {l.Text}"))
+                    + Environment.NewLine + "  links: " + string.Join(" | ", vm.OutgoingLinks.Select(l => $"{l.Title} ({l.Location}, {l.State})"))
+                    + Environment.NewLine + "  mentions: " + string.Join(" | ", vm.UnlinkedMentions.Select(l => $"{l.Title}:{l.Line} {l.Text}")),
                 "tasks" => string.Join(Environment.NewLine, vm.Tasks.Select(t => $"  [{t.Group}] {t.Description} | {t.DueLabel} {t.Extras}")),
                 "groups" => $"split={vm.IsSplit} vertical={vm.SplitVertical} focused={vm.FocusedGroup.Index} "
                     + $"first=[{string.Join(", ", vm.Primary.Tabs.Select(t => (t == vm.Primary.ActiveTab ? "*" : "") + t.Title + ":" + vm.Primary.ModeOf(t)))}] "
@@ -547,6 +560,9 @@ internal sealed class Step
     public string? Capture { get; set; }
 
     public Ultiviewer.Core.Capture.CaptureTarget CaptureTarget { get; set; }
+
+    /// <summary>Turns every unlinked mention in the Links pane into a link.</summary>
+    public bool LinkMentions { get; set; }
 
     /// <summary>Runs a search and prints the results.</summary>
     public string? Search { get; set; }
