@@ -4,3 +4,6 @@
 *.png binary
 *.ico binary
 *.woff2 binary
+*.one binary
+*.onepkg binary
+*.onetoc2 binary
