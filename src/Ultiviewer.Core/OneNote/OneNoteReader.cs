@@ -57,6 +57,11 @@ public static class OneNoteReader
     {
         var root = file.Root;
         var name = root.Get(root.MetadataRoot)?.Properties.String(SectionDisplayName) is { Length: > 0 } displayName ? displayName : fallbackName;
+        if (name.Length > 4 && name.EndsWith(".one", StringComparison.OrdinalIgnoreCase))
+        {
+            name = name[..^4]; // OneNote for the web stores the file name
+        }
+
         var section = root.Get(root.ContentRoot);
         if (section?.Jcid != SectionNode)
         {

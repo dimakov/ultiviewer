@@ -8,12 +8,15 @@ public static class OneStoreLoader
         var format = RevisionStoreReader.FormatOf(data);
         if (format == RevisionStoreReader.DesktopFormat)
         {
-            return RevisionStoreReader.Read(data, folder);
+            // Newer OneDrive downloads keep a desktop header but store a package after it.
+            return PackageStoreReader.EmbeddedPackageOffset(data) is { } offset
+                ? PackageStoreReader.Read(data, offset)
+                : RevisionStoreReader.Read(data, folder);
         }
 
         if (format == RevisionStoreReader.PackagedFormat)
         {
-            throw new OneNoteFormatException("This section was saved by OneNote for the web (OneDrive), a format the import doesn't read yet.");
+            return PackageStoreReader.Read(data);
         }
 
         throw new OneNoteFormatException("This is not a OneNote file.");

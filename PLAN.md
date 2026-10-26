@@ -325,8 +325,8 @@ Each milestone ends with a runnable app and small, focused commits.
   page counts; selecting a page shows it converted (the normal preview renderer, and its Markdown), with what will
   be lossy listed underneath. The target folder and name are chosen there. **Import** writes only the checked
   items, with the same conversion that was previewed, and then shows the report.
-- **Later:** sections saved by OneNote for the web / OneDrive (the FSSHTTPB packaged format) need a second store
-  reader feeding the same model; they are listed and reported as unreadable until then.
+- Both section formats are read: OneNote's desktop revision store and the packaged FSSHTTPB store of OneNote for
+  the web / OneDrive, through two store readers feeding the same model.
 - Details: [docs/hld/onenote-import.md](docs/hld/onenote-import.md).
 
 ### M8: Live preview editing (Obsidian style)

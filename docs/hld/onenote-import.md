@@ -42,9 +42,11 @@ entry in the import report: ink drawings and handwriting inside text, equations 
 their structure), audio/video, and pictures or files whose data isn't in the file (cloud-only). Free positioning
 of containers on the page is not kept: containers are read top to bottom, then left to right.
 
-Not read yet: sections saved by OneNote for the web / OneDrive (the packaged FSSHTTPB variant). They are listed and
-reported as "not imported" with that reason. Password-protected sections can't be read (their content is
-encrypted); unlock them in OneNote before exporting. There is no sample of one yet, so how they show up is untested.
+Both of OneNote's section formats are read: the desktop revision store (OneNote 2016 and the desktop app's
+exports) and the packaged FSSHTTPB store that OneNote for the web and OneDrive write (also inside a desktop-style
+header in newer downloads).
+Password-protected sections can't be read (their content is encrypted); unlock them in OneNote before exporting.
+There is no sample of one yet, so how they show up is untested.
 
 ## The import window
 
@@ -79,7 +81,7 @@ waits for it, and deletes the preview folder and the package's temporary folder.
 folder / .onetoc2 ────────────────────────┼─► OneNoteSource ─► OneNoteNotebook (groups, OneNoteSectionFile)
 .one ─────────────────────────────────────┘                          │
                                                                      ▼  per section, when needed
-                          RevisionStoreReader (MS-ONESTORE) ─► OneStoreFile ─► OneNoteReader (MS-ONE)
+      RevisionStoreReader (desktop) or PackageStoreReader (web) ─► OneStoreFile ─► OneNoteReader (MS-ONE)
                                                                      │
                                                                      ▼
                                      OneNoteSection ─► OneNotePage ─► OneNoteMarkdown.Convert
@@ -95,8 +97,10 @@ folder / .onetoc2 ────────────────────�
 | `Core/OneNote/Cabinet.cs` | CAB extraction for `.onepkg`. MSZIP blocks are inflated by `DeflateStream` after a stored deflate block that holds the previous 32 KB (MSZIP's history between blocks; `DeflateStream` can't be given a dictionary). Other compression goes to Windows' `tar.exe`. Entry names that leave the destination are skipped. |
 | `Core/OneNote/OneNoteSource.cs` | Opens an input, lists section groups and sections (`.onetoc2` order first, then by name; `OneNote_RecycleBin` skipped), and deletes a package's temporary folder on `Dispose`. |
 | `Core/OneNote/Store/RevisionStoreReader.cs` | The desktop revision store: header, transaction log (committed node counts per list), file node lists, object spaces and their active revisions (role 1, default context, dependency chains), object groups and their global ID tables, property sets, the file data store and `<ifndf>`/`<file>`/`<invfdo>` references (`<file>` is looked up next to the section and in `onefiles/`). |
-| `Core/OneNote/Store/StoreModel.cs` | The format-neutral result: object spaces of `StoreObject`s (JCID + `PropertySet`), with typed property accessors. A future FSSHTTPB reader produces the same model. |
-| `Core/OneNote/Store/OneStoreLoader.cs` | Picks the reader by the format GUID in the header. |
+| `Core/OneNote/Store/PackageStoreReader.cs` | The packaged store of OneNote for the web ([MS-ONESTORE] 2.8 around [MS-FSSHTTPB]): stream objects and data elements (storage index, storage manifest, cell and revision manifests, object groups, data blobs). Each cell (context + object space) becomes an object space; a revision's objects come first, then its base revisions' other objects. Objects are split in partitions: 4 holds the JCID, 1 the property set (its compact IDs resolve in order through the object's references and cells), 2 a blob with the file data. |
+| `Core/OneNote/Store/PropertySetReader.cs` | The ObjectSpaceObjectPropSet structure both readers share; each reader says how compact IDs become ids. |
+| `Core/OneNote/Store/StoreModel.cs` | The format-neutral result: object spaces of `StoreObject`s (JCID + `PropertySet`), with typed property accessors. |
+| `Core/OneNote/Store/OneStoreLoader.cs` | Picks the reader by the format GUID in the header, and finds a package embedded after a desktop header. |
 | `Core/OneNote/OneNoteReader.cs` | The content model on top of the store: sections → pages (metadata space for title, level and times; content space for the page tree), outlines, paragraphs, runs, styles, tags, pictures, files, tables; the `.onetoc2` order. JCIDs and property IDs are constants at the top. |
 | `Core/OneNote/OneNoteModel.cs` | The page model (`OneNotePage`, `OneNoteOutline`, `OneNoteElement`, `OneNoteText`/`OneNoteRun`/`OneNoteStyle`, `OneNoteImage`, `OneNoteFile`, `OneNoteTable`, `OneNoteUnsupported`). |
 | `Core/OneNote/OneNoteMarkdown.cs` | Page → Markdown + assets + notes. Uses `Core/Markdown/MarkdownEscape.cs` (shared with formatted paste) so text never turns into Markdown by accident. |
@@ -119,10 +123,13 @@ folder / .onetoc2 ────────────────────�
 - **New content type:** add its JCID and properties to `OneNoteReader`, a record to `OneNoteModel`, and a case in
   `OneNoteMarkdown.Writer.Content`. Anything that can't be represented should become `OneNoteUnsupported` with a
   human name, so it is reported instead of silently dropped.
-- **OneDrive (FSSHTTPB) sections:** write a reader that turns the packaged storage into `OneStoreFile` (object
-  spaces of `StoreObject`s with the same property sets) and select it in `OneStoreLoader`. Nothing above the store
-  needs to change.
+- **Store formats:** both readers end in the same `OneStoreFile`, so the content model never knows the format.
+  In the packaged store, one object space can exist in several contexts (a page's content and its version
+  history); spaces are keyed by context and space together (`CellId.Key`), or a version history can hide a page.
+  Use the storage index the package header names; older ones can still be in the file.
 - **Markdown output:** keep escaping through `MarkdownEscape`; formatting must not span line breaks (each line is
   formatted on its own) and must wrap text without its surrounding spaces (`Hoist`), or CommonMark won't see it.
 - Tests: `tests/Ultiviewer.Core.Tests/OneNote/`. Only the MIT sample `OneWithFileData.one` (with its `LICENSE`)
   and a `makecab`-built package of it are committed; other public samples are under incompatible licenses.
+  `PackageStoreTests` builds a small FSSHTTPB package in code (revisions, a version-history context, a picture
+  blob, the embedded variant).
