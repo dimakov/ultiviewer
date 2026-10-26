@@ -331,6 +331,11 @@ internal static class Program
             quick.Close();
         }
 
+        if (step.OneNote is { } oneNote)
+        {
+            ImportOneNote(vm, oneNote);
+        }
+
         if (step.Shortcuts is { } shortcuts)
         {
             ChangeShortcuts(vm, window, shortcuts, step.ShortcutsShot);
@@ -469,6 +474,135 @@ internal static class Program
         settings.ApplyTo(vm.Settings);
         window.ApplyShortcuts();
         Console.WriteLine("  stored overrides: " + string.Join(", ", vm.Settings.Shortcuts.Select(p => $"{p.Key}={p.Value}")));
+    }
+
+    /// <summary>
+    /// Opens a OneNote file in the import window off-screen (never activated), waits for its sections to be read,
+    /// prints the tree, unchecks and selects items by path ("Section/Page"), saves the window, the rendered page and
+    /// the Markdown tab, and optionally imports into a folder.
+    /// </summary>
+    private static void ImportOneNote(MainViewModel vm, OneNoteStep step)
+    {
+        var source = Ultiviewer.Core.OneNote.OneNoteSource.Open(step.Path);
+        var model = new OneNoteImportViewModel(source, step.Path, step.Into ?? Path.GetTempPath(), new ScriptDialogs(), result =>
+        {
+            vm.OpenNotebook(result.Folder).IsExpanded = true;
+            Console.WriteLine($"opened imported notebook {result.Folder}");
+        });
+        var window = new Ultiviewer.App.Views.OneNoteImportWindow(model)
+        {
+            ShowActivated = false,
+            ShowInTaskbar = false,
+            WindowStartupLocation = WindowStartupLocation.Manual,
+            Left = -32000,
+            Top = -32000,
+            Width = step.Width,
+            Height = step.Height,
+        };
+        var shown = 0;
+        window.PreviewShown += () => shown++;
+        window.Show();
+        Pump(300);
+        Wait(model.Scanning, 60000);
+        Pump(200);
+
+        Ultiviewer.App.ViewModels.OneNoteImportItem Find(string path)
+        {
+            IEnumerable<Ultiviewer.App.ViewModels.OneNoteImportItem> items = model.Items;
+            Ultiviewer.App.ViewModels.OneNoteImportItem? found = null;
+            foreach (var name in path.Split('/'))
+            {
+                found = items.FirstOrDefault(i => i.Name == name) ?? throw new InvalidOperationException($"no item '{name}' in '{path}'");
+                items = found.Children;
+            }
+
+            return found!;
+        }
+
+        foreach (var path in step.Uncheck)
+        {
+            Find(path).IsChecked = false;
+        }
+
+        void Print(IEnumerable<Ultiviewer.App.ViewModels.OneNoteImportItem> items, string indent)
+        {
+            foreach (var item in items)
+            {
+                var check = item.IsChecked switch { true => "[x]", false => "[ ]", null => "[-]" };
+                Console.WriteLine($"{indent}{check} {item.Name}  {item.Detail}{(item.HasWarning ? "  ⚠ " + string.Join("; ", item.Notes) : "")}");
+                Print(item.Children, indent + "    ");
+            }
+        }
+
+        Print(model.Items, "  ");
+        Console.WriteLine($"  {model.Selection} · can import: {model.CanImport}");
+
+        if (step.Select is { } select)
+        {
+            var before = shown;
+            Find(select).IsSelected = true;
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            while (shown == before && watch.ElapsedMilliseconds < 30000)
+            {
+                Pump(100);
+            }
+
+            Pump(500);
+            Console.WriteLine($"selected '{select}': {model.PageMarkdown.Length} chars of Markdown, notes: {string.Join("; ", model.Notes)}");
+            if (step.PreviewShot is { } previewShot)
+            {
+                Wait(window.CapturePreviewAsync(previewShot), 10000);
+                Console.WriteLine($"saved {previewShot}");
+            }
+        }
+
+        if (step.Shot is { } shot)
+        {
+            Save(window, shot);
+            Console.WriteLine($"saved {shot}");
+        }
+
+        if (step.MarkdownShot is { } markdownShot)
+        {
+            window.Views.SelectedIndex = 1;
+            Pump(300);
+            Save(window, markdownShot);
+            Console.WriteLine($"saved {markdownShot}");
+            window.Views.SelectedIndex = 0;
+        }
+
+        if (step.Into is not null && step.Import)
+        {
+            if (step.Name is { } name)
+            {
+                model.NotebookName = name;
+            }
+
+            Wait(model.ImportAsync(), 120000);
+            Console.WriteLine($"import: {model.Status}");
+            Console.WriteLine($"  {model.NotesHeading}");
+            foreach (var note in model.Notes)
+            {
+                Console.WriteLine("    " + note);
+            }
+
+            if (step.ReportShot is { } reportShot)
+            {
+                Pump(300);
+                Save(window, reportShot);
+                Console.WriteLine($"saved {reportShot}");
+            }
+        }
+
+        var firstSection = model.Items.SelectMany(i => i.Descendants().Prepend(i)).FirstOrDefault(i => i.Section is not null)?.Section?.Path;
+        window.Close();
+        var closing = System.Diagnostics.Stopwatch.StartNew();
+        while (window.IsLoaded && closing.ElapsedMilliseconds < 10000)
+        {
+            Pump(100);
+        }
+
+        Console.WriteLine($"closed; first section file still there: {firstSection is not null && File.Exists(firstSection)}");
     }
 
     /// <summary>Opens the command palette off-screen (never activated), filters it, prints and optionally runs the top entry.</summary>
@@ -778,6 +912,8 @@ internal sealed class Step
 
     public PaletteStep? Palette { get; set; }
 
+    public OneNoteStep? OneNote { get; set; }
+
     public string? Key { get; set; }
 
     /// <summary>An <c>EditorCommands</c> property name to run on the focused editor (e.g. "FoldAll", "MoveLineUp").</summary>
@@ -803,6 +939,37 @@ internal sealed class Step
 
     /// <summary>Writes settings and the session (open tabs, split) as closing the window would.</summary>
     public bool SaveState { get; set; }
+}
+
+/// <summary>Opens a OneNote file in the import window (see <see cref="Program"/>).</summary>
+internal sealed class OneNoteStep
+{
+    public string Path { get; set; } = "";
+
+    public double Width { get; set; } = 1120;
+
+    public double Height { get; set; } = 780;
+
+    /// <summary>Tree paths ("Group/Section/Page") to uncheck.</summary>
+    public List<string> Uncheck { get; set; } = [];
+
+    /// <summary>Tree path of the item to select.</summary>
+    public string? Select { get; set; }
+
+    public string? Shot { get; set; }
+
+    public string? PreviewShot { get; set; }
+
+    public string? MarkdownShot { get; set; }
+
+    /// <summary>The folder for the new notebook.</summary>
+    public string? Into { get; set; }
+
+    public string? Name { get; set; }
+
+    public bool Import { get; set; }
+
+    public string? ReportShot { get; set; }
 }
 
 /// <summary>Opens the command palette with a query.</summary>

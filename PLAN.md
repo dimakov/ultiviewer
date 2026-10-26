@@ -19,7 +19,7 @@ Working name: **Ultiviewer**. A native Windows note-taking app that combines:
 **Non-goals for v1**
 
 - OneNote's free-form canvas (drag-anywhere containers, ink, audio). Pages are linear text.
-- Reading or writing OneNote `.one` files directly. Importing goes through the COM API instead (M7).
+- Writing OneNote files. Importing reads them directly (M7) instead of going through OneNote's COM API.
 - Our own sync service. Notebooks sync by living in OneDrive, Dropbox or git.
 - macOS and Linux.
 
@@ -309,25 +309,25 @@ Each milestone ends with a runnable app and small, focused commits.
 - Publish with `dotnet publish -c Release -r win-x64 --self-contained -p:PublishReadyToRun=true` and ship a zip. Then build an installer (Inno Setup or MSIX) with a `.md` file association and an "Open with Ultiviewer" entry in Explorer.
 - **Done when:** on a fresh Windows account, after installing, double-clicking a `.md` in Explorer opens it in the running app.
 
-### M7 (optional): OneNote import
+### M7: OneNote import
 
-- Uses the OneNote COM API, which needs the installed desktop OneNote:
-  - `GetHierarchy` reads the notebooks, sections and pages;
-  - `GetPageContent` (with binary data) returns OneNote XML;
-  - a converter turns that XML into Markdown: outlines become paragraphs and lists, tables become tables, images are saved to the assets folder, and to-do tags become `- [ ]`.
-- Writes a new notebook folder and never modifies the source.
-- Ink, free-positioned containers and embedded files will need lossy fallbacks.
-- **Import preview** — nothing is written until the user has seen the result:
-  - *File → Import from OneNote…* opens a read-only preview window. It shows the source hierarchy (notebooks → section groups → sections → pages) as a tree with checkboxes, page counts and sizes.
-  - Selecting a page shows it converted. The rendered Markdown uses the normal preview renderer, and its Markdown source sits beside it, so the conversion can be judged before importing.
-  - Each page lists what will be lossy: ink, free-positioned containers, embedded files, unsupported tags.
-  - The target folder, the resulting file names and any name collisions are shown before import.
-  - **Import** writes only the checked items. The preview's conversions are reused, so what was seen is exactly what is written.
-- **Inputs:**
-  - Notebooks open in OneNote.
-  - `.one` section files and `.onepkg` packages, opened from the menu or dropped on the window. A `.onepkg` is a CAB archive of `.one` files and is unpacked to a temp folder.
-  - Reading needs OneNote's COM API (`OpenHierarchy` on the file, then `GetHierarchy` / `GetPageContent`). A direct MS-ONESTORE reader, which would not need OneNote, is a possible later step.
-- **Privacy:** the user's OneNote data is read only after they start an import or preview.
+- Reads OneNote's files directly, so OneNote doesn't need to be installed and never touches the source:
+  a `[MS-ONESTORE]` revision-store reader plus the `[MS-ONE]` content model. The COM API (`GetHierarchy` /
+  `GetPageContent`) was the original plan; it was dropped because it needs the installed desktop OneNote, works
+  through the user's live notebooks and can't be tested without them.
+- **Inputs:** `.onepkg` packages (a CAB archive, unpacked to a temp folder), notebook folders / `.onetoc2`, and
+  single `.one` sections, from the menu or dropped on the window.
+- A converter turns pages into Markdown: outlines become paragraphs and lists, tables become tables, pictures and
+  attached files go to the assets folder, to-do tags become `- [ ]`, other tags `#tags`, OneNote page links
+  `[[wiki links]]`. Ink, equations' layout and cloud-only files have lossy fallbacks (placeholder + report).
+- Writes a new notebook folder (staged, then moved into place) and never modifies the source.
+- **Import preview:** *File → Import from OneNote…* shows section groups, sections and pages with check boxes and
+  page counts; selecting a page shows it converted (the normal preview renderer, and its Markdown), with what will
+  be lossy listed underneath. The target folder and name are chosen there. **Import** writes only the checked
+  items, with the same conversion that was previewed, and then shows the report.
+- **Later:** sections saved by OneNote for the web / OneDrive (the FSSHTTPB packaged format) need a second store
+  reader feeding the same model; they are listed and reported as unreadable until then.
+- Details: [docs/hld/onenote-import.md](docs/hld/onenote-import.md).
 
 ### M8: Live preview editing (Obsidian style)
 

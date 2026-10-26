@@ -46,6 +46,32 @@ Not read yet: sections saved by OneNote for the web / OneDrive (the packaged FSS
 reported as "not imported" with that reason. Password-protected sections can't be read (their content is
 encrypted); unlock them in OneNote before exporting. There is no sample of one yet, so how they show up is untested.
 
+## The import window
+
+File → **Import from OneNote…** (or dropping a `.onepkg`, `.one` or `.onetoc2` on the main window) opens the file
+on a background thread and shows the import window:
+
+- **Left:** section groups, sections and pages (subpages nested) with check boxes. Checking a row checks
+  everything under it; groups and sections show the combined state (indeterminate when mixed); a page's box is
+  independent of its subpages'. Each section shows its page count, and ⚠ marks pages with conversion notes and
+  sections that can't be read (those start unchecked).
+- **Right:** the selected page as it will be written: **Preview** (the normal WebView2 preview, with pictures from
+  a temporary folder) and **Markdown**, with "Not imported exactly" notes underneath.
+- **Bottom:** notebook name and destination folder (default: the app's notebooks folder), the selection summary,
+  progress, **Import** and **Close**. After an import the notes area shows the report, and the new notebook is
+  opened in the tree.
+
+All sections are read once in the background when the window opens (for counts and notes); the last four read
+are kept in memory and reused by the preview and the import. Closing the window cancels reading or importing,
+waits for it, and deletes the preview folder and the package's temporary folder.
+
+| File | Owns |
+|---|---|
+| `App/ViewModels/MainViewModel.OneNote.cs` | The command: pick or receive a file, `OneNoteSource.Open` on a background thread, raise `OneNoteImportRequested`, open the imported notebook. |
+| `App/ViewModels/OneNoteImportViewModel.cs` | The tree (`OneNoteImportItem`: check-state propagation), background scan, section cache, page preview (converted with the same asset naming as the import), and the import with the choices snapshotted into `OneNoteImportOptions`. |
+| `App/Views/OneNoteImportWindow.xaml(.cs)` | Layout, the `PreviewPane`, and close handling. |
+| `tools/Ultiviewer.Snapshot` (`oneNote` step) | Opens the window off-screen, prints the tree, unchecks/selects by path, saves the window, the rendered page (`PreviewPane.CaptureAsync`) and the Markdown tab, and imports. |
+
 ## How it works
 
 ```text

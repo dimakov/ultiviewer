@@ -69,6 +69,13 @@ public sealed class PreviewPane
         return await _web.CoreWebView2.PrintToPdfAsync(path, settings);
     }
 
+    /// <summary>Saves what the preview shows as a PNG (the snapshot tool can't capture WebView2 itself).</summary>
+    public async Task CaptureAsync(string path)
+    {
+        await using var stream = File.Create(path);
+        await _web.CoreWebView2.CapturePreviewAsync(CoreWebView2CapturePreviewImageFormat.Png, stream);
+    }
+
     /// <summary>Opens the browser print dialog (printer, pages, preview).</summary>
     public void ShowPrintDialog() => _web.CoreWebView2.ShowPrintUI(CoreWebView2PrintDialogKind.Browser);
 

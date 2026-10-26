@@ -1,0 +1,119 @@
+<Window x:Class="Ultiviewer.App.Views.OneNoteImportWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:Ultiviewer.App.ViewModels"
+        Title="{Binding Title}" Width="1120" Height="780" MinWidth="720" MinHeight="460"
+        ShowInTaskbar="False" WindowStartupLocation="CenterOwner">
+    <DockPanel>
+        <Grid DockPanel.Dock="Bottom" Margin="12,8,12,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="220" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <TextBlock Grid.Column="0" Margin="0,0,6,0" VerticalAlignment="Center" Text="Notebook name" />
+            <TextBox Grid.Column="1" Padding="4,2" Text="{Binding NotebookName, UpdateSourceTrigger=PropertyChanged}"
+                     AutomationProperties.Name="Notebook name" />
+            <TextBlock Grid.Column="2" Margin="16,0,6,0" VerticalAlignment="Center" Text="in" />
+            <TextBox Grid.Column="3" Padding="4,2" IsReadOnly="True" Text="{Binding TargetFolder, Mode=OneWay}"
+                     AutomationProperties.Name="Folder for the new notebook" />
+            <Button Grid.Column="4" MinWidth="90" Margin="8,0,0,0" Content="Change…" Click="OnChangeFolder" />
+
+            <DockPanel Grid.Row="1" Grid.ColumnSpan="5" Margin="0,10,0,0" LastChildFill="True">
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button x:Name="ImportButton" MinWidth="100" Content="Import" IsDefault="True"
+                            IsEnabled="{Binding CanImport}" Click="OnImport" />
+                    <Button x:Name="CloseButton" MinWidth="90" Margin="8,0,0,0" Content="Close" IsCancel="True" Click="OnClose" />
+                </StackPanel>
+                <ProgressBar DockPanel.Dock="Left" Width="90" Height="6" Margin="0,0,10,0" IsIndeterminate="True"
+                             Visibility="{Binding IsImporting, Converter={StaticResource BoolToVisibility}}" />
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Selection}" Opacity="0.7" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding Status}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Status}" />
+                </StackPanel>
+            </DockPanel>
+        </Grid>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="360" MinWidth="200" />
+                <ColumnDefinition Width="5" />
+                <ColumnDefinition Width="*" MinWidth="280" />
+            </Grid.ColumnDefinitions>
+
+            <TreeView x:Name="Tree" Grid.Column="0" ItemsSource="{Binding Items}" BorderThickness="0,1,0,1" BorderBrush="#30808080"
+                      Background="Transparent" AutomationProperties.Name="OneNote notebook"
+                      SelectedItemChanged="OnSelectedItemChanged">
+                <TreeView.ItemContainerStyle>
+                    <Style TargetType="TreeViewItem" BasedOn="{StaticResource {x:Type TreeViewItem}}">
+                        <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                        <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+                        <Setter Property="AutomationProperties.Name" Value="{Binding Name}" />
+                    </Style>
+                </TreeView.ItemContainerStyle>
+                <TreeView.ItemTemplate>
+                    <HierarchicalDataTemplate DataType="{x:Type vm:OneNoteImportItem}" ItemsSource="{Binding Children}">
+                        <StackPanel Orientation="Horizontal" Background="Transparent" Margin="0,1">
+                            <CheckBox VerticalAlignment="Center" Margin="0,0,6,0" IsChecked="{Binding IsChecked}"
+                                      AutomationProperties.Name="{Binding Name, StringFormat='Import {0}'}" Focusable="False" />
+                            <TextBlock Width="16" Margin="0,0,6,0" VerticalAlignment="Center"
+                                       FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" Opacity="0.75"
+                                       Text="{Binding Glyph}" />
+                            <TextBlock VerticalAlignment="Center" Text="{Binding Name}" />
+                            <TextBlock VerticalAlignment="Center" Margin="8,0,0,0" Opacity="0.6" Text="{Binding Detail}" />
+                            <TextBlock VerticalAlignment="Center" Margin="6,0,0,0" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                       FontSize="12" Foreground="#C08000" Text="&#xE7BA;" ToolTip="Not everything converts exactly; select it to see what"
+                                       Visibility="{Binding HasWarning, Converter={StaticResource BoolToVisibility}}" />
+                        </StackPanel>
+                    </HierarchicalDataTemplate>
+                </TreeView.ItemTemplate>
+            </TreeView>
+
+            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="Transparent" />
+
+            <DockPanel Grid.Column="2">
+                <Border DockPanel.Dock="Bottom" MaxHeight="180" BorderThickness="0,0,0,1" BorderBrush="#30808080"
+                        Visibility="{Binding HasNotes, Converter={StaticResource BoolToVisibility}}">
+                    <DockPanel Margin="10,8,10,8">
+                        <TextBlock DockPanel.Dock="Top" FontWeight="SemiBold" Text="{Binding NotesHeading}" Margin="0,0,0,4" />
+                        <ListBox x:Name="NotesList" ItemsSource="{Binding Notes}" BorderThickness="0" Background="Transparent"
+                                 AutomationProperties.Name="{Binding NotesHeading}">
+                            <ListBox.ItemContainerStyle>
+                                <Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
+                                    <Setter Property="Padding" Value="4,2" />
+                                    <Setter Property="MinHeight" Value="0" />
+                                </Style>
+                            </ListBox.ItemContainerStyle>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding}" TextWrapping="Wrap" />
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </DockPanel>
+                </Border>
+                <TabControl x:Name="Views" BorderThickness="0,1,0,1" Padding="0">
+                    <TabItem Header="Preview">
+                        <Grid>
+                            <Border x:Name="PreviewHost" />
+                            <TextBlock x:Name="PreviewHint" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.6"
+                                       Text="Select a page to see how it will look." />
+                        </Grid>
+                    </TabItem>
+                    <TabItem Header="Markdown">
+                        <TextBox x:Name="Source" IsReadOnly="True" BorderThickness="0" Padding="10,8"
+                                 FontFamily="Cascadia Mono, Consolas" FontSize="13" TextWrapping="Wrap"
+                                 VerticalScrollBarVisibility="Auto" Text="{Binding PageMarkdown, Mode=OneWay}"
+                                 AutomationProperties.Name="Markdown of the page" />
+                    </TabItem>
+                </TabControl>
+            </DockPanel>
+        </Grid>
+    </DockPanel>
+</Window>

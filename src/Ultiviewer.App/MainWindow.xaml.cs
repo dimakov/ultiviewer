@@ -48,6 +48,7 @@ public partial class MainWindow : Window
         _vm.HistoryRequested += ShowHistory;
         _vm.QuickCaptureRequested += ShowQuickCapture;
         _vm.ExportRequested += request => new Views.ExportWindow(request) { Owner = this }.Show();
+        _vm.OneNoteImportRequested += model => new Views.OneNoteImportWindow(model) { Owner = this }.Show();
     }
 
     /// <summary>The editor of the focused pane.</summary>
@@ -341,6 +342,12 @@ public partial class MainWindow : Window
         {
             foreach (var file in files.Where(System.IO.File.Exists))
             {
+                if (Ultiviewer.Core.OneNote.OneNoteSource.CanOpen(file))
+                {
+                    _vm.ImportOneNoteCommand.Execute(file); // OneNote files open in the import window
+                    continue;
+                }
+
                 _vm.OpenDocument(file, preview: false);
             }
 
