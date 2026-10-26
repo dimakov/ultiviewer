@@ -227,9 +227,9 @@ public static partial class OneNoteMarkdown
                     return Inline(text);
                 case OneNoteImage image:
                 {
-                    if (image.Data is null)
+                    if (image.Data is not { Length: > 0 })
                     {
-                        Note($"A picture couldn't be imported: {image.Problem ?? "its data is missing"}");
+                        Note($"A picture couldn't be imported: {image.Problem ?? (image.Data is null ? "its data is missing" : "the file holds no data for it")}");
                         return "*(picture not available)*";
                     }
 
@@ -364,6 +364,18 @@ public static partial class OneNoteMarkdown
                     continue;
                 }
 
+                // Pages clipped in OneNote for the web can keep the link marker in visible text.
+                var marker = value.Contains('\uFDDF');
+                if (marker)
+                {
+                    foreach (Match found in VisibleHyperlink().Matches(value))
+                    {
+                        pendingLink = found.Groups[1].Value;
+                    }
+
+                    value = VisibleHyperlink().Replace(value, "").Replace("\uFDDF", "");
+                }
+
                 if (value.Contains('\uFFFC'))
                 {
                     ink = true;
@@ -380,7 +392,7 @@ public static partial class OneNoteMarkdown
                 }
 
                 var link = style.Hyperlink ? pendingLink : null;
-                if (!style.Hyperlink)
+                if (!style.Hyperlink && !marker)
                 {
                     pendingLink = null;
                 }
@@ -625,6 +637,9 @@ public static partial class OneNoteMarkdown
     // \uFDDFHYPERLINK "https://…" (the hidden part of a OneNote link)
     [GeneratedRegex("HYPERLINK\\s+\"([^\"]*)\"")]
     private static partial Regex HyperlinkTarget();
+
+    [GeneratedRegex("\uFDDFHYPERLINK\\s+\"([^\"]*)\"")]
+    private static partial Regex VisibleHyperlink();
 
     // OneNote's equation structure markers (noncharacters U+FDD0–U+FDEF).
     [GeneratedRegex("[\uFDD0-\uFDEF]")]

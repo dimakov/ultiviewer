@@ -80,6 +80,17 @@ public class OneNoteMarkdownTests
     }
 
     [Fact]
+    public void DropsLinkMarkersLeftInVisibleText()
+    {
+        // OneNote for the web can keep the marker in a run that isn't hidden; the link text follows in a link run.
+        var text = Text(null,
+            ("See \uFDDFHYPERLINK \"https://example.com/x\"", Plain), ("the docs", Plain with { Hyperlink = true }),
+            (" and \uFDDFHYPERLINK \"https://example.com/y\"plain words", Plain));
+
+        Assert.Equal("See [the docs](https://example.com/x) and plain words", Md(Para(text)));
+    }
+
+    [Fact]
     public void WritesHeadingsQuotesAndCodeBlocks()
     {
         var markdown = Md(
@@ -153,14 +164,16 @@ public class OneNoteMarkdownTests
             new OneNoteFreeContent(new OneNoteImage(jpg, null, null, "photo.jpeg", "https://example.com", null)),
             new OneNoteFreeContent(new OneNoteImage(png, null, null, null, null, null)),
             new OneNoteFreeContent(new OneNoteFile("report final.pdf", [1, 2], null)),
-            new OneNoteFreeContent(new OneNoteImage(null, null, null, null, null, "it is stored in the cloud")));
+            new OneNoteFreeContent(new OneNoteImage(null, null, null, null, null, "it is stored in the cloud")),
+            new OneNoteFreeContent(new OneNoteImage([], ".jpeg", null, null, null, null)));
 
         Assert.Equal(
             "![A chart](Page.assets/image.png)\n\n[![](Page.assets/photo.jpg)](https://example.com)\n\n![](Page.assets/image%202.png)\n\n"
             + "[report final.pdf](Page.assets/report%20final.pdf)\n\n*(picture not available)*\n",
-            converted.Markdown);
+            converted.Markdown); // the empty picture adds no second placeholder right after the first
         Assert.Equal(["image.png", "photo.jpg", "image 2.png", "report final.pdf"], converted.Assets.Select(a => a.Name));
         Assert.Contains(converted.Notes, n => n.Contains("it is stored in the cloud"));
+        Assert.Contains(converted.Notes, n => n.Contains("the file holds no data for it"));
     }
 
     [Fact]
