@@ -34,7 +34,7 @@
   spacing stays tidy; the caret stays at the same place inside the moved block.
 - Folding and Live mode's table widgets both collapse lines; the Live transformer styles only the first line of
   a multi-line visual line, so a folded heading keeps its heading style.
-- In Live mode the left offset of the centered column is editor padding, so the fold margin stays next to the text.
+- In Live mode the text starts at the left, right after the line numbers and the fold margin.
 
 ## Extending safely
 

@@ -82,7 +82,11 @@ public sealed class AppSettings
     public string LiveFontFamily { get; set; } = "Segoe UI Variable Text, Segoe UI";
 
     /// <summary>Widest text column of the Live view in pixels, centered; 0 uses the full width.</summary>
-    public int LiveMaxWidth { get; set; } = 820;
+    /// <summary>
+    /// Longest line in Live view, in pixels; 0 uses the full window width. The text always starts at the left.
+    /// (Replaces the former centered column, liveMaxWidth.)
+    /// </summary>
+    public int LiveLineWidth { get; set; }
 
     /// <summary>
     /// Live view shows the Markdown marks of the text at the caret (Obsidian's behavior). Off (the default), only

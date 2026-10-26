@@ -31,6 +31,10 @@ public sealed partial class LivePreview
     private bool _stale = true;
     private (int Start, int End)? _revealed;
 
+    // Set when a document is shown: its lines were drawn for a caret position that isn't tracked yet, so the
+    // first caret move redraws them all (otherwise a heading revealed at the opening caret stays revealed).
+    private bool _redrawAllOnMove = true;
+
     // Lines under a rendered table, collapsed like a fold (AvalonEdit requires that for multi-line elements),
     // keyed by the table's first line.
     private readonly Dictionary<DocumentLine, CollapsedLineSection> _collapsed = [];
@@ -237,6 +241,7 @@ public sealed partial class LivePreview
         }
 
         _collapsed.Clear(); // a new document gets a new height tree
+        _redrawAllOnMove = true;
 
         _stale = true;
         _revealed = null;
@@ -273,6 +278,13 @@ public sealed partial class LivePreview
 
         var previous = _revealed;
         _revealed = region;
+        if (_redrawAllOnMove)
+        {
+            _redrawAllOnMove = false;
+            TextView.Redraw();
+            return;
+        }
+
         if (previous is { } old)
         {
             Redraw(old);

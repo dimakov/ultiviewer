@@ -39,7 +39,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         _defaultUtf8Bom = settings.DefaultUtf8Bom;
         _defaultMarkdownViewMode = settings.DefaultMarkdownViewMode;
         _liveFontFamily = settings.LiveFontFamily;
-        _liveMaxWidth = settings.LiveMaxWidth;
+        _liveLineWidth = settings.LiveLineWidth;
         _showMarksAtCaret = settings.ShowMarksAtCaret;
         _dateFormat = settings.DateFormat;
         _timeFormat = settings.TimeFormat;
@@ -193,7 +193,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     private string _liveFontFamily;
 
     [ObservableProperty]
-    private int _liveMaxWidth;
+    private int _liveLineWidth;
 
     [ObservableProperty]
     private bool _showMarksAtCaret;
@@ -247,7 +247,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         settings.DefaultUtf8Bom = DefaultUtf8Bom;
         settings.DefaultMarkdownViewMode = DefaultMarkdownViewMode;
         settings.LiveFontFamily = string.IsNullOrWhiteSpace(LiveFontFamily) ? "Segoe UI" : LiveFontFamily;
-        settings.LiveMaxWidth = LiveMaxWidth <= 0 ? 0 : Math.Clamp(LiveMaxWidth, 300, 4000);
+        settings.LiveLineWidth = LiveLineWidth <= 0 ? 0 : Math.Clamp(LiveLineWidth, 300, 4000);
         settings.ShowMarksAtCaret = ShowMarksAtCaret;
         settings.DailyNotesNotebook = string.IsNullOrWhiteSpace(DailyNotesNotebook) ? null : DailyNotesNotebook;
         settings.DailyNotesFolder = DailyNotesFolder.Trim();

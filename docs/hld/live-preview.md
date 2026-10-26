@@ -20,8 +20,9 @@ formatted, like Obsidian's Live Preview:
   the source.
 - Styles: headings by level, bold/italic/strike/underline/highlight/sub/superscript, inline code and code
   blocks (monospace, panel), tags (pill), `<span style="color:…">` colors, math (italic), HTML comments (faint).
-- A proportional font (`liveFontFamily`, default Segoe UI) in a centered column (`liveMaxWidth`, default 820
-  px; 0 = full width); code, tables and front matter keep the editor font. No line numbers or current-line band.
+- A proportional font (`liveFontFamily`, default Segoe UI). The text starts at the left after the line numbers
+  (View → Line numbers applies in Live too) and uses the full width; `liveLineWidth` (pixels, 0 = full width)
+  can cap the line length. Code, tables and front matter keep the editor font. No current-line band.
 - Clicking a rendered link opens it (URL, relative file, `[[wiki link]]`, `#tag` search); while a link shows as
   source, Ctrl+click opens it. Backspace at the start of a list item's text removes its bullet or checkbox.
 
@@ -40,7 +41,7 @@ New installs open Markdown in Live; choosing a mode on a tab also makes it the d
 | `App/Editor/Live/LiveElements.cs` | `HiddenElement` (zero-width or fixed-width run), `BulletElement`, `TaskBoxVisual`. |
 | `App/Editor/Live/LiveWidgets.cs` | Image and table widgets; Markdown → WPF inlines for table cells (reuses `LiveMarkup`). |
 | `App/Editor/Live/LiveStyles.cs` | Fonts and brushes per theme. |
-| `App/Views/EditorHost.Live.cs` | Mode switching (font, wrap, line numbers, highlighting off), centered column via `TextView.Margin`, clicks in the side margins. |
+| `App/Views/EditorHost.Live.cs` | Mode switching (font, wrap, current-line highlighting off), left-aligned text with an optional line width (`liveLineWidth`) via `TextView.Margin`, clicks in the side margins. |
 
 ## How it works
 

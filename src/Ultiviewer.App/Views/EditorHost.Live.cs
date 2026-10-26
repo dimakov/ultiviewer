@@ -66,7 +66,7 @@ public partial class EditorHost
         _live.HideMarks = !settings.ShowMarksAtCaret;
         Editor.FontFamily = live ? _live.Styles.TextFont : Font(settings.EditorFontFamily, "Consolas");
         Editor.WordWrap = live || settings.WordWrap;
-        Editor.ShowLineNumbers = !live && settings.ShowLineNumbers;
+        Editor.ShowLineNumbers = settings.ShowLineNumbers;
         Editor.Options.HighlightCurrentLine = !live && settings.HighlightCurrentLine;
         if (live)
         {
@@ -81,11 +81,11 @@ public partial class EditorHost
         UpdateLiveMargins();
     }
 
-    /// <summary>In Live mode the text sits in a centered column at most <see cref="AppSettings.LiveMaxWidth"/> wide.</summary>
-    /// <remarks>
-    /// The left offset goes into the editor's padding, so the margins (folding, bookmarks) stay next to the text;
-    /// the text view keeps just enough room for code panels to reach left of the text.
-    /// </remarks>
+    /// <summary>
+    /// In Live mode the text starts at the left, after the margins (line numbers, folding), and its lines are at most
+    /// <see cref="AppSettings.LiveLineWidth"/> wide (0 = the full width). The text view keeps just enough room on the
+    /// left for code panels to reach beside the text.
+    /// </summary>
     private void UpdateLiveMargins()
     {
         var view = Editor.TextArea.TextView;
@@ -98,11 +98,11 @@ public partial class EditorHost
         }
 
         var inner = LiveBackgroundRenderer.Bleed + 16;
-        var maxWidth = _vm?.Settings.LiveMaxWidth ?? 0;
-        var available = Editor.ActualWidth - SystemParameters.VerticalScrollBarWidth;
-        var side = maxWidth > 0 ? Math.Max(inner, (available - maxWidth) / 2) : inner;
-        Editor.Padding = new Thickness(Math.Round(side - inner), 0, 0, 0);
-        view.Margin = new Thickness(inner, 0, Math.Round(side), 0);
+        var lineWidth = _vm?.Settings.LiveLineWidth ?? 0;
+        var available = view.ActualWidth + view.Margin.Left + view.Margin.Right;
+        var right = lineWidth > 0 ? Math.Max(inner, available - inner - lineWidth) : inner;
+        Editor.Padding = _sourcePadding.Value;
+        view.Margin = new Thickness(inner, 0, Math.Round(right), 0);
     }
 
     private Thickness? _sourcePadding;
