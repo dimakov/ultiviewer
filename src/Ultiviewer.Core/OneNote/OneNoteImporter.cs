@@ -189,9 +189,10 @@ public static class OneNoteImporter
                 }
 
                 var page = node.Page;
-                var title = UniqueName(used, FileNameRules.MakeValid(page.Title, UntitledPage));
+                var name = OneNoteReader.DisplayTitle(page);
+                var title = UniqueName(used, FileNameRules.MakeValid(name, UntitledPage));
                 var pagePath = Path.Combine(container, title + NotebookScanner.PageExtension);
-                var label = Join(where, page.Title.Trim().Length > 0 ? page.Title.Trim() : UntitledPage);
+                var label = Join(where, name.Length > 0 ? name : UntitledPage);
                 progress?.Report(label);
 
                 var assets = PageAssets.FolderFor(pagePath);

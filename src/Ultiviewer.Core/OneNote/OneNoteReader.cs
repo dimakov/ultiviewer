@@ -198,6 +198,33 @@ public static class OneNoteReader
         return text.ToString().Trim();
     }
 
+    /// <summary>
+    /// The page's name as OneNote lists it: the title, or for an untitled page the start of its first line of
+    /// text; empty when the page has neither.
+    /// </summary>
+    public static string DisplayTitle(OneNotePage page)
+    {
+        if (page.Title.Length > 0)
+        {
+            return page.Title;
+        }
+
+        static IEnumerable<OneNoteText> Texts(IEnumerable<OneNoteElement> elements) =>
+            elements.SelectMany(e => e.Contents.OfType<OneNoteText>().Concat(Texts(e.Children)));
+
+        var first = page.Blocks.OfType<OneNoteOutline>().SelectMany(o => Texts(o.Elements))
+            .SelectMany(t => VisibleText(t).Replace("\uFFFC", "").Split('\n', '\u000B'))
+            .Select(line => line.Trim())
+            .FirstOrDefault(line => line.Length > 0) ?? "";
+        if (first.Length <= 60)
+        {
+            return first;
+        }
+
+        var cut = first.LastIndexOf(' ', 60);
+        return first[..(cut > 20 ? cut : 60)].TrimEnd() + "…";
+    }
+
     /// <summary>The text a reader sees: hidden runs (hyperlink targets) removed.</summary>
     public static string VisibleText(OneNoteText text)
     {

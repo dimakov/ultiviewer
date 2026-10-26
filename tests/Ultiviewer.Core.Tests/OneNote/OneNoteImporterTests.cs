@@ -22,6 +22,19 @@ public class OneNoteImporterTests
         Assert.Equal("B deep", Assert.Single(tree[2].Children).Page.Title); // a level-3 page right after a level-1 page
     }
 
+    [Theory]
+    [InlineData("Plan", "Body", "Plan")]
+    [InlineData("", "First line\nsecond line", "First line")]
+    [InlineData("", "A first line that is much too long to be a page name, so it is cut at a word", "A first line that is much too long to be a page name, so it…")]
+    [InlineData("", "", "")]
+    public void NamesUntitledPagesByTheirFirstLine(string title, string body, string expected)
+    {
+        var text = new OneNoteText(body, body.Length == 0 ? [] : [new OneNoteRun(0, body.Length, OneNoteStyle.Plain)], null, []);
+        var page = new OneNotePage(title, 1, null, null, [new OneNoteOutline([new OneNoteElement([text], [], null)])]);
+
+        Assert.Equal(expected, OneNoteReader.DisplayTitle(page));
+    }
+
     [Fact]
     public void ImportsPackageAsNotebookFolderWithAttachmentsOrderAndTimes()
     {

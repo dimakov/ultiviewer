@@ -44,7 +44,7 @@ of containers on the page is not kept: containers are read top to bottom, then l
 
 Both of OneNote's section formats are read: the desktop revision store (OneNote 2016 and the desktop app's
 exports) and the packaged FSSHTTPB store that OneNote for the web and OneDrive write (also inside a desktop-style
-header in newer downloads).
+header in newer downloads). Untitled pages are named after their first line of text, as OneNote lists them.
 Password-protected sections can't be read (their content is encrypted); unlock them in OneNote before exporting.
 There is no sample of one yet, so how they show up is untested.
 

@@ -269,7 +269,7 @@ public sealed partial class OneNoteImportViewModel : ObservableObject
         {
             foreach (var node in nodes)
             {
-                var title = node.Page.Title.Length > 0 ? node.Page.Title : "Untitled page";
+                var title = OneNoteReader.DisplayTitle(node.Page) is { Length: > 0 } name ? name : "Untitled page";
                 var page = new OneNoteImportItem(ImportItemKind.Page, title, parent)
                 {
                     Section = file,
@@ -321,7 +321,7 @@ public sealed partial class OneNoteImportViewModel : ObservableObject
             var (converted, pagePath) = await Task.Run(() =>
             {
                 var page = Read(file).Pages[index];
-                var path = Path.Combine(folder, FileNameRules.MakeValid(page.Title, "Untitled page") + NotebookScanner.PageExtension);
+                var path = Path.Combine(folder, FileNameRules.MakeValid(OneNoteReader.DisplayTitle(page), "Untitled page") + NotebookScanner.PageExtension);
                 var assets = PageAssets.FolderFor(path);
                 var result = OneNoteMarkdown.Convert(page, asset => PageAssets.RelativeUrl(path, Path.Combine(assets, asset)));
                 Directory.CreateDirectory(assets);
