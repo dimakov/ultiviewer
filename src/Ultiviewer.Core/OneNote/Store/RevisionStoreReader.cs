@@ -562,132 +562,11 @@ public sealed class RevisionStoreReader
 
     // ---- Property sets ([MS-ONESTORE] 2.6.1, 2.6.7) ----
 
-    private sealed class IdStreams(List<ExGuid> objects, List<ExGuid> spaces, List<ExGuid> contexts)
-    {
-        private int _object, _space, _context;
-
-        public IReadOnlyList<ExGuid> TakeObjects(uint count) => Take(objects, ref _object, count);
-
-        public IReadOnlyList<ExGuid> TakeSpaces(uint count) => Take(spaces, ref _space, count);
-
-        public IReadOnlyList<ExGuid> TakeContexts(uint count) => Take(contexts, ref _context, count);
-
-        private static IReadOnlyList<ExGuid> Take(List<ExGuid> stream, ref int position, uint count)
-        {
-            var available = (int)Math.Min(count, (uint)Math.Max(0, stream.Count - position));
-            var taken = stream.GetRange(position, available);
-            position += available;
-            return taken;
-        }
-    }
-
-    private PropertySet ReadObjectPropSet(ChunkReference reference, Dictionary<uint, Guid> table)
-    {
-        if (reference.IsNilOrZero)
-        {
-            return PropertySet.Empty;
-        }
-
-        var at = reference.Stp;
-        Need(at, reference.Cb);
-        var header = U32(at);
-        at += 4;
-        var objects = CompactIds(ref at, header & 0xFFFFFF, table);
-        List<ExGuid> spaces = [], contexts = [];
-        if (header >> 31 == 0) // the object space ID stream is present
-        {
-            var spaceHeader = U32(at);
-            at += 4;
-            spaces = CompactIds(ref at, spaceHeader & 0xFFFFFF, table);
-            if ((spaceHeader >> 30 & 1) != 0) // ...and a context ID stream follows
-            {
-                var contextHeader = U32(at);
-                at += 4;
-                contexts = CompactIds(ref at, contextHeader & 0xFFFFFF, table);
-            }
-        }
-
-        return ReadPropertySet(ref at, new IdStreams(objects, spaces, contexts), 0);
-    }
-
-    private List<ExGuid> CompactIds(ref long at, uint count, Dictionary<uint, Guid> table)
-    {
-        Need(at, 4L * count);
-        var ids = new List<ExGuid>((int)Math.Min(count, 100_000));
-        for (var k = 0u; k < count; k++, at += 4)
-        {
-            ids.Add(Resolve(U32(at), table));
-        }
-
-        return ids;
-    }
-
-    private PropertySet ReadPropertySet(ref long at, IdStreams streams, int depth)
-    {
-        if (depth > 32)
-        {
-            throw Corrupt("property sets are nested too deeply");
-        }
-
-        var count = U16(at);
-        at += 2;
-        var ids = new uint[count];
-        for (var k = 0; k < count; k++, at += 4)
-        {
-            ids[k] = U32(at);
-        }
-
-        var set = new PropertySet();
-        foreach (var id in ids)
-        {
-            PropertyValue value;
-            switch ((id >> 26) & 0x1F)
-            {
-                case 0x1: value = new NoValue(); break;
-                case 0x2: value = new BoolValue(id >> 31 != 0); break;
-                case 0x3: value = new NumberValue(_data[Check(at, 1)], 1); at += 1; break;
-                case 0x4: value = new NumberValue(U16(at), 2); at += 2; break;
-                case 0x5: value = new NumberValue(U32(at), 4); at += 4; break;
-                case 0x6: value = new NumberValue(U64(at), 8); at += 8; break;
-                case 0x7:
-                {
-                    var length = U32(at);
-                    at += 4;
-                    Need(at, length);
-                    value = new BytesValue(_data.AsSpan((int)at, (int)length).ToArray());
-                    at += length;
-                    break;
-                }
-
-                case 0x8: value = new ReferencesValue(streams.TakeObjects(1)); break;
-                case 0x9: value = new ReferencesValue(streams.TakeObjects(U32(at))); at += 4; break;
-                case 0xA: value = new ReferencesValue(streams.TakeSpaces(1)); break;
-                case 0xB: value = new ReferencesValue(streams.TakeSpaces(U32(at))); at += 4; break;
-                case 0xC: value = new ReferencesValue(streams.TakeContexts(1)); break;
-                case 0xD: value = new ReferencesValue(streams.TakeContexts(U32(at))); at += 4; break;
-                case 0x10:
-                {
-                    var sets = U32(at);
-                    at += 8; // the count, then the element type's PropertyID
-                    var values = new List<PropertySet>();
-                    for (var k = 0u; k < sets && k < 100_000; k++)
-                    {
-                        values.Add(ReadPropertySet(ref at, streams, depth + 1));
-                    }
-
-                    value = new PropertySetsValue(values);
-                    break;
-                }
-
-                case 0x11: value = new PropertySetsValue([ReadPropertySet(ref at, streams, depth + 1)]); break;
-                default: throw Corrupt($"unknown property type {(id >> 26) & 0x1F:X}");
-            }
-
-            set.Add(id, value);
-        }
-
-        return set;
-    }
+    /// <summary>An object's properties; compact IDs resolve through the object group's global ID table.</summary>
+    private PropertySet ReadObjectPropSet(ChunkReference reference, Dictionary<uint, Guid> table) =>
+        reference.IsNilOrZero
+            ? PropertySet.Empty
+            : PropertySetReader.Read(_data, reference.Stp, reference.Cb, (_, ids) => [.. ids.Select(id => Resolve(id, table))]);
 
     // ---- Primitives ----
 
@@ -735,5 +614,5 @@ public sealed class RevisionStoreReader
         }
     }
 
-    private static OneNoteFormatException Corrupt(string detail) => new($"The OneNote file is damaged or not supported: {detail}.");
+    private static OneNoteFormatException Corrupt(string detail) => PropertySetReader.Corrupt(detail);
 }
