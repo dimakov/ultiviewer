@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using AngleSharp.Dom;
 using AngleSharp.Html.Parser;
+using Ultiviewer.Core.Markdown;
 
 namespace Ultiviewer.Core.Clipping;
 
@@ -185,7 +186,7 @@ public sealed partial class HtmlToMarkdown
         {
             if (line.Length > 0)
             {
-                paragraph.Add(EscapeLineStart(line));
+                paragraph.Add(MarkdownEscape.LineStart(line));
                 continue;
             }
 
@@ -265,7 +266,7 @@ public sealed partial class HtmlToMarkdown
             var marker = paragraph.QuerySelectorAll("[style]").FirstOrDefault(e => IsWordListMarker(e))?.TextContent ?? "";
             var ordered = OrderedMarker().IsMatch(Collapse(marker).Trim());
             var text = OneLine(InlineChildren(paragraph));
-            lines.Add(new string(' ', 4 * (Math.Clamp(level, 1, 9) - 1)) + (ordered ? "1. " : "- ") + EscapeLineStart(text));
+            lines.Add(new string(' ', 4 * (Math.Clamp(level, 1, 9) - 1)) + (ordered ? "1. " : "- ") + MarkdownEscape.LineStart(text));
         }
 
         return string.Join("\n", lines);
@@ -362,7 +363,7 @@ public sealed partial class HtmlToMarkdown
 
     private string Inline(INode node) => node switch
     {
-        IText text => EscapeText(Collapse(text.Data)),
+        IText text => MarkdownEscape.Text(Collapse(text.Data)),
         IElement element => InlineElement(element),
         _ => "",
     };
@@ -489,7 +490,7 @@ public sealed partial class HtmlToMarkdown
         }
 
         _formatted = true;
-        return "![" + EscapeText(alt) + "](" + Destination(target) + ")";
+        return "![" + MarkdownEscape.Text(alt) + "](" + Destination(target) + ")";
     }
 
     /// <summary>The real picture of lazy-loading pages (<c>data-src</c>, the largest <c>srcset</c> entry) before a placeholder <c>src</c>.</summary>
@@ -624,44 +625,7 @@ public sealed partial class HtmlToMarkdown
     /// <summary>Whitespace (including no-break spaces and newlines) collapsed to single spaces, as browsers show it.</summary>
     private static string Collapse(string text) => Whitespace().Replace(text, " ");
 
-    /// <summary>Escapes characters that would otherwise turn plain text into Markdown or math.</summary>
-    private static string EscapeText(string text)
-    {
-        var builder = new StringBuilder(text.Length + 8);
-        for (var i = 0; i < text.Length; i++)
-        {
-            var c = text[i];
-            var previous = i > 0 ? text[i - 1] : ' ';
-            var next = i + 1 < text.Length ? text[i + 1] : ' ';
-            var escape = c switch
-            {
-                '\\' => char.IsAsciiLetterOrDigit(next) || char.IsWhiteSpace(next) ? false : true,
-                '*' or '`' or '[' or ']' or '$' => true,
-                '_' => !(char.IsLetterOrDigit(previous) && char.IsLetterOrDigit(next)),
-                '<' => char.IsAsciiLetter(next) || next is '/' or '!' or '?',
-                '~' => next == '~' || previous == '~',
-                '=' => next == '=' || previous == '=',
-                _ => false,
-            };
-            if (escape)
-            {
-                builder.Append('\\');
-            }
-
-            builder.Append(c);
-        }
-
-        return builder.ToString();
-    }
-
     private static string Unescape(string text) => Escaped().Replace(text, "$1");
-
-    /// <summary>Text that would start a heading, quote, list or rule at the beginning of a line is escaped.</summary>
-    private static string EscapeLineStart(string line)
-    {
-        var match = BlockStart().Match(line);
-        return match.Success ? line.Insert(match.Groups["at"].Index, "\\") : line;
-    }
 
     private static int LongestRun(string text, char c)
     {
@@ -687,9 +651,6 @@ public sealed partial class HtmlToMarkdown
 
     [GeneratedRegex(@"^(?:[-+*]|\d+[.)]) ")]
     private static partial Regex ListStart();
-
-    [GeneratedRegex(@"^(?:(?<at>#{1,6})(?: |$)|(?<at>>)|(?<at>[-+])(?: |$)|\d+(?<at>[.)])(?: |$)|(?<at>=){3,}\s*$|(?<at>-){3,}\s*$)")]
-    private static partial Regex BlockStart();
 
     [GeneratedRegex(@"\\([\\`*_{}\[\]()#+\-.!<>~=$|])")]
     private static partial Regex Escaped();
