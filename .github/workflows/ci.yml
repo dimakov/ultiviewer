@@ -9,8 +9,6 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-      # Tests compare text with LF line endings, as the files are stored in git.
-      - run: git config --global core.autocrlf false
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:

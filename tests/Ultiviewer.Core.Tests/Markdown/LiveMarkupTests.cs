@@ -237,7 +237,8 @@ public class LiveMarkupTests
     [Fact]
     public void ChunksSplitOnlyWhereABlockCannotContinue()
     {
-        var chunks = LiveMarkup.Chunks(Sample).Select(c => Sample[c.Start..c.End].Split('\n')[0]).ToList();
+        // The sample has CRLF line ends when git checks the file out that way on Windows.
+        var chunks = LiveMarkup.Chunks(Sample).Select(c => Sample[c.Start..c.End].Split('\n')[0].TrimEnd('\r')).ToList();
 
         Assert.Equal(["---", "Para with **bold** and [link](u) and [ref link][r].", "- item", "```", "<!-- a comment", "$$", "| A | B |", "---", "Setext", "[r]: https://example.com"], chunks);
     }
