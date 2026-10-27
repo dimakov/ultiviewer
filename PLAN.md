@@ -235,7 +235,7 @@ Each milestone ends with a runnable app and small, focused commits.
 - Install the **.NET 10 SDK** on Windows: `winget install Microsoft.DotNet.SDK.10`. The machine currently has only the .NET 6 and 8 *runtimes*, with no SDK and no Visual Studio, and Visual Studio isn't needed.
 - `git init` inside `ultiviewer/`. It currently sits untracked inside the parent `codex` repo.
 - Create the solution, Core, App and Tests projects, plus `.gitignore` and `build.cmd`. Show an empty main window.
-- To build from WSL, run `cmd.exe /c "cd /d C:\Users\intel-nuc\Documents\codex\ultiviewer && build.cmd"`. Keep the repo on `C:`, because the WPF build has to run under the Windows `dotnet`.
+- To build from WSL, run `cmd.exe /c "cd /d C:\path\to\ultiviewer && build.cmd"`. Keep the repo on `C:`, because the WPF build has to run under the Windows `dotnet`.
 - **Done when:** the build and the test run are green and the window opens.
 
 ### M1: Notebook tree

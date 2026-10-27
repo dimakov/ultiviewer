@@ -1,0 +1,19 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      # Tests compare text with LF line endings, as the files are stored in git.
+      - run: git config --global core.autocrlf false
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet build Ultiviewer.slnx -c Debug -nologo
+      - run: dotnet test tests/Ultiviewer.Core.Tests/Ultiviewer.Core.Tests.csproj -c Debug --no-build -nologo

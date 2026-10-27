@@ -1,8 +1,19 @@
 # Ultiviewer
 
+[![CI](https://github.com/dimakov/ultiviewer/actions/workflows/ci.yml/badge.svg)](https://github.com/dimakov/ultiviewer/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 A native Windows note-taking app: OneNote's notebook → section → page hierarchy on top of plain Markdown files, Notepad++-style tabs and editing, and a live Markdown preview.
 
 Notes are ordinary `.md` files in ordinary folders, so Explorer, git, OneDrive and other editors keep working with them.
+
+**Requirements:** Windows 10 version 2004 or later (or Windows 11), x64, and the
+[Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/) for the preview
+(already part of Windows 11 and current Windows 10). The release build is self-contained: no .NET install needed.
+
+There are no prebuilt downloads yet; build it as below (`build.cmd publish`) and run
+`artifacts\publish\Ultiviewer\Ultiviewer.exe`. [docs/feature-tour.md](docs/feature-tour.md) shows where to find
+each feature.
 
 ## Features
 
@@ -45,7 +56,7 @@ build.cmd publish    :: self-contained release -> artifacts\Ultiviewer-win-x64.z
 From WSL, keep the repo on the Windows drive and call the Windows toolchain:
 
 ```sh
-cmd.exe /c "cd /d C:\Users\intel-nuc\Documents\codex\ultiviewer && build.cmd"
+cmd.exe /c "cd /d C:\path\to\ultiviewer && build.cmd"
 ```
 
 The app is built self-contained (`win-x64`), so `Ultiviewer.exe` runs without a machine-wide .NET 10 runtime.
@@ -72,4 +83,15 @@ Set `ULTIVIEWER_HOME=<folder>` to keep all of the above (except notes) in one fo
 | `tests/Ultiviewer.Core.Tests` | xUnit tests for Core. |
 | `tools/Ultiviewer.Snapshot` | Developer tool: renders the main window off-screen to PNG from a JSON script (see `docs/hld/live-preview.md`). |
 | `docs/hld` | High-level design documents, one per feature. |
-| `research` | Background research (OneNote search internals). |
+| `research` | Background research (OneNote search internals, the `System.Numerics.dll` facade). |
+| `.github/workflows/ci.yml` | Builds everything and runs the tests on Windows for every push and pull request. |
+
+## Contributing
+
+Bug reports and ideas are welcome as [GitHub issues](https://github.com/dimakov/ultiviewer/issues). Pull requests
+should keep `build.cmd` green; each feature has a design note in `docs/hld/` that is updated with it.
+
+## License
+
+Ultiviewer is released under the [MIT License](LICENSE). Bundled libraries and test samples keep their own
+licenses; see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
